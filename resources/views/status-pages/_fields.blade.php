@@ -21,12 +21,10 @@
 <x-field label="Monitors" hint="Pick which monitors appear on this status page.">
     <div class="rounded-lg ring-1 ring-inset ring-slate-300 divide-y divide-slate-100 max-h-72 overflow-y-auto">
         @forelse ($monitors as $m)
-            <label class="flex items-center gap-3 px-3 py-2 text-sm hover:bg-slate-50">
-                <input type="checkbox" name="monitor_ids[]" value="{{ $m->id }}" @checked(in_array($m->id, old('monitor_ids', $sel)))
-                    class="rounded border-slate-300 text-brand-600 focus:ring-brand-500">
+            <x-check-switch name="monitor_ids[]" :value="$m->id" :checked="in_array($m->id, old('monitor_ids', $sel))" class="w-full px-3 py-2 hover:bg-slate-50">
                 <span class="text-slate-700">{{ $m->name }}</span>
-                <span class="text-slate-400 text-xs">{{ $m->typeLabel() }}</span>
-            </label>
+                <span class="ml-2 text-slate-400 text-xs">{{ $m->typeLabel() }}</span>
+            </x-check-switch>
         @empty
             <p class="px-3 py-3 text-sm text-slate-500">No monitors yet. Create one first.</p>
         @endforelse
