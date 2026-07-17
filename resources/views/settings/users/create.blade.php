@@ -1,5 +1,6 @@
 <x-layouts.app title="New User">
-    <x-page-header title="New User" icon="users" subtitle="Create a login. Users manage their own Directors; admins manage everything." />
+    <x-page-header title="New User" icon="users" subtitle="Create a login. Users manage their own Directors; admins manage everything."
+        :back="['href' => route('settings.users.index'), 'label' => 'Users & Admins']" />
     <x-card>
         <form method="POST" action="{{ route('settings.users.store') }}" class="space-y-5">
             @csrf

@@ -1,6 +1,6 @@
 <x-layouts.app title="Add Host">
     <x-page-header title="Add Host" icon="server" subtitle="Register A Host, Then Install The Agent With A Single Command."
-        :back="['href' => route('hosts.index'), 'label' => 'Back To Hosts']" />
+        :back="['href' => route('hosts.index'), 'label' => 'Hosts']" />
 
     <div class="max-w-2xl">
         <x-card>

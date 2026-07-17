@@ -1,5 +1,6 @@
 <x-layouts.app title="Maintenance">
-    <x-page-header title="Maintenance" icon="refresh" subtitle="Telemetry retention, incident history, and audit pruning windows." />
+    <x-page-header title="Maintenance" icon="refresh" subtitle="Telemetry retention, incident history, and audit pruning windows."
+        :back="['href' => route('settings.index'), 'label' => 'Settings']" />
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div class="lg:col-span-2 space-y-6">

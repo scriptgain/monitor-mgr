@@ -40,11 +40,8 @@
     $ago = fn ($v) => $v ? \Illuminate\Support\Carbon::parse($v)->diffForHumans() : null;
 @endphp
 <x-layouts.app title="License">
-    <x-page-header title="License" icon="shield" subtitle="Manage your {{ $license['product'] }} license key and signed license file.">
-        <x-slot:actions>
-            <x-button variant="secondary" icon="settings" href="{{ route('settings.index') }}">Settings</x-button>
-        </x-slot:actions>
-    </x-page-header>
+    <x-page-header title="License" icon="shield" subtitle="Manage your {{ $license['product'] }} license key and signed license file."
+        :back="['href' => route('settings.index'), 'label' => 'Settings']" />
 
     @if ($offline['present'] && $offState && $offState !== 'valid')
         <div class="mb-6">

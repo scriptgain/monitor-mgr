@@ -10,11 +10,8 @@
     ];
 @endphp
 <x-layouts.app title="Audit Log">
-    <x-page-header title="Audit Log" icon="book" subtitle="Who signed in and changed what, across the fleet.">
-        <x-slot:actions>
-            <x-button variant="secondary" icon="settings" href="{{ route('settings.index') }}">Settings</x-button>
-        </x-slot:actions>
-    </x-page-header>
+    <x-page-header title="Audit Log" icon="book" subtitle="Who signed in and changed what, across the fleet."
+        :back="['href' => route('settings.index'), 'label' => 'Settings']" />
 
 
     <div x-data="{

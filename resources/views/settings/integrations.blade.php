@@ -3,11 +3,8 @@
     $en = fn ($k) => \App\Models\Setting::get($k) === '1';
 @endphp
 <x-layouts.app title="Integrations">
-    <x-page-header title="Integrations" icon="bolt" subtitle="Post alerts to chat channels and webhooks.">
-        <x-slot:actions>
-            <x-button variant="secondary" icon="settings" href="{{ route('settings.index') }}">Settings</x-button>
-        </x-slot:actions>
-    </x-page-header>
+    <x-page-header title="Integrations" icon="bolt" subtitle="Post alerts to chat channels and webhooks."
+        :back="['href' => route('settings.index'), 'label' => 'Settings']" />
 
     @if (session('status'))
         <div class="mb-5 rounded-lg bg-brand-50 px-4 py-3 text-sm text-brand-800 ring-1 ring-brand-100">{{ session('status') }}</div>

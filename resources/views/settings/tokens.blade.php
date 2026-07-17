@@ -1,9 +1,6 @@
 <x-layouts.app title="API Tokens">
-    <x-page-header title="API Tokens" icon="key" subtitle="Full-access tokens for the Manager API. Treat them like passwords.">
-        <x-slot:actions>
-            <x-button variant="secondary" icon="settings" href="{{ route('settings.index') }}">Settings</x-button>
-        </x-slot:actions>
-    </x-page-header>
+    <x-page-header title="API Tokens" icon="key" subtitle="Full-access tokens for the Manager API. Treat them like passwords."
+        :back="['href' => route('settings.index'), 'label' => 'Settings']" />
 
     @if (session('token_plain'))
         <div class="mb-6">

@@ -1,9 +1,6 @@
 <x-layouts.app title="Change Password">
-    <x-page-header title="Change Password" icon="shield" subtitle="Update your account password.">
-        <x-slot:actions>
-            <x-button variant="secondary" icon="settings" href="{{ route('settings.index') }}">Settings</x-button>
-        </x-slot:actions>
-    </x-page-header>
+    <x-page-header title="Change Password" icon="shield" subtitle="Update your account password."
+        :back="['href' => route('settings.index'), 'label' => 'Settings']" />
 
     <x-card>
         <form method="POST" action="{{ route('settings.password.update') }}" class="space-y-5 max-w-xl">

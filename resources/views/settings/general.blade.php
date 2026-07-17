@@ -1,5 +1,6 @@
 <x-layouts.app title="General">
-    <x-page-header title="General" icon="settings" subtitle="System-wide defaults for regional display, backups, agents, and security." />
+    <x-page-header title="General" icon="settings" subtitle="System-wide defaults for regional display, backups, agents, and security."
+        :back="['href' => route('settings.index'), 'label' => 'Settings']" />
 
     <form method="POST" action="{{ route('settings.general.update') }}" class="space-y-6">
         @csrf @method('PUT')

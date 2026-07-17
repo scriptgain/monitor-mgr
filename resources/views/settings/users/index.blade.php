@@ -1,7 +1,7 @@
 <x-layouts.app title="Users">
-    <x-page-header title="Users & Admins" icon="users" subtitle="Who can sign in and what they can manage.">
+    <x-page-header title="Users & Admins" icon="users" subtitle="Who can sign in and what they can manage."
+        :back="['href' => route('settings.index'), 'label' => 'Settings']">
         <x-slot:actions>
-            <x-button variant="secondary" icon="settings" href="{{ route('settings.index') }}">Settings</x-button>
             <x-button icon="plus" href="{{ route('settings.users.create') }}">New User</x-button>
         </x-slot:actions>
     </x-page-header>

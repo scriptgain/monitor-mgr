@@ -3,11 +3,8 @@
     $g = fn ($k) => \App\Models\Setting::get($k);
 @endphp
 <x-layouts.app title="Notifications">
-    <x-page-header title="Notifications" icon="bell" subtitle="Get emailed when a backup fails.">
-        <x-slot:actions>
-            <x-button variant="secondary" icon="settings" href="{{ route('settings.index') }}">Settings</x-button>
-        </x-slot:actions>
-    </x-page-header>
+    <x-page-header title="Notifications" icon="bell" subtitle="Get emailed when a backup fails."
+        :back="['href' => route('settings.index'), 'label' => 'Settings']" />
 
     <form method="POST" action="{{ route('settings.notifications.update') }}" class="space-y-6">
         @csrf

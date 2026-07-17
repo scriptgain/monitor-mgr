@@ -1,5 +1,6 @@
 <x-layouts.app title="Edit User">
-    <x-page-header title="Edit User" icon="users" :subtitle="$user->email" />
+    <x-page-header title="Edit User" icon="users" :subtitle="$user->email"
+        :back="['href' => route('settings.users.index'), 'label' => 'Users & Admins']" />
     <x-card>
         <form method="POST" action="{{ route('settings.users.update', $user) }}" class="space-y-5">
             @csrf

@@ -1,9 +1,6 @@
 <x-layouts.app title="Branding">
-    <x-page-header title="Branding" icon="edit" subtitle="Rename and re-color the whole product.">
-        <x-slot:actions>
-            <x-button variant="secondary" icon="settings" href="{{ route('settings.index') }}">Settings</x-button>
-        </x-slot:actions>
-    </x-page-header>
+    <x-page-header title="Branding" icon="edit" subtitle="Rename and re-color the whole product."
+        :back="['href' => route('settings.index'), 'label' => 'Settings']" />
 
     <form method="POST" action="{{ route('settings.branding.update') }}"
           x-data="{ accent: '{{ config('brand.accent') }}', name: '{{ addslashes(config('brand.name')) }}' }" class="space-y-6">

@@ -1,9 +1,6 @@
 <x-layouts.app title="Two-Factor Auth">
-    <x-page-header title="Two-Factor Authentication" icon="shield" subtitle="A time-based code from an authenticator app, in addition to your password.">
-        <x-slot:actions>
-            <x-button variant="secondary" icon="settings" href="{{ route('settings.index') }}">Settings</x-button>
-        </x-slot:actions>
-    </x-page-header>
+    <x-page-header title="Two-Factor Authentication" icon="shield" subtitle="A time-based code from an authenticator app, in addition to your password."
+        :back="['href' => route('settings.index'), 'label' => 'Settings']" />
 
     @if ($enabled)
         <x-card>

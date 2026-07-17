@@ -11,11 +11,8 @@
     $sessionIdsJs = $revocableSessionIds->map(fn ($id) => "'".$id."'")->implode(',');
 @endphp
 <x-layouts.app title="Firewall">
-    <x-page-header title="Firewall" icon="shield" subtitle="Sessions, IP bans, access allowlist, and failed-login protection.">
-        <x-slot:actions>
-            <x-button variant="secondary" icon="settings" href="{{ route('settings.index') }}">Settings</x-button>
-        </x-slot:actions>
-    </x-page-header>
+    <x-page-header title="Firewall" icon="shield" subtitle="Sessions, IP bans, access allowlist, and failed-login protection."
+        :back="['href' => route('settings.index'), 'label' => 'Settings']" />
 
     @if (session('error'))
         <div class="mb-6"><x-alert type="danger">{{ session('error') }}</x-alert></div>
