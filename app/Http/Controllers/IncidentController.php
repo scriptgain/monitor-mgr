@@ -52,7 +52,7 @@ class IncidentController extends Controller
         if (! $incident->resolved_at) {
             $incident->update([
                 'resolved_at' => now(),
-                'duration_seconds' => now()->diffInSeconds($incident->started_at),
+                'duration_seconds' => (int) ($incident->started_at ? $incident->started_at->diffInSeconds(now()) : 0),
             ]);
             if ($incident->monitor && $incident->monitor->status === 'down') {
                 $incident->monitor->update(['status' => 'up']);
