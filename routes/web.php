@@ -48,11 +48,15 @@ Route::get('/brand/favicon', [FaviconController::class, 'svg'])->name('favicon.s
 Route::get('/brand/favicon-png', [FaviconController::class, 'faviconPng'])->name('favicon.png');
 Route::get('/brand/favicon-apple', [FaviconController::class, 'appleIcon'])->name('favicon.apple');
 
+// Public status page, reachable by slug without authentication.
+Route::get('/status/{slug}', [StatusPageController::class, 'publicShow'])->name('status.public');
+
 // Authenticated control panel.
 Route::middleware(['auth', 'security.policy'])->group(function () {
     Route::get('/', DashboardController::class)->name('dashboard');
 
     // Monitors (core) + a demo/manual way to record a check.
+    Route::post('monitors/bulk', [MonitorController::class, 'bulkAction'])->name('monitors.bulk');
     Route::resource('monitors', MonitorController::class);
     Route::post('monitors/{monitor}/checks', [MonitorController::class, 'storeCheck'])->name('monitors.checks.store');
 
@@ -64,6 +68,7 @@ Route::middleware(['auth', 'security.policy'])->group(function () {
     Route::post('incidents/{incident}/resolve', [IncidentController::class, 'resolve'])->name('incidents.resolve');
 
     // Public status pages (composed from monitors).
+    Route::delete('status-pages/bulk', [StatusPageController::class, 'bulkDestroy'])->name('status-pages.bulk-destroy');
     Route::resource('status-pages', StatusPageController::class)->parameters(['status-pages' => 'statusPage']);
 
     // Alert contacts (notification destinations).

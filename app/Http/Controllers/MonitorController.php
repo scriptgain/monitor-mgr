@@ -94,6 +94,33 @@ class MonitorController extends Controller
         return redirect()->route('monitors.index')->with('status', "Monitor \"{$name}\" deleted.");
     }
 
+    /** Delete / pause / resume the selected monitors (visibility-scoped). */
+    public function bulkAction(Request $request)
+    {
+        $data = $request->validate([
+            'ids' => ['required', 'array'],
+            'ids.*' => ['integer'],
+            'action' => ['required', 'in:delete,pause,resume'],
+        ]);
+
+        $monitors = Monitor::whereIn('id', $data['ids'])->get()
+            ->filter(fn ($m) => $m->isVisibleTo(auth()->user()));
+
+        foreach ($monitors as $m) {
+            match ($data['action']) {
+                'delete' => $m->delete(),
+                'pause' => $m->update(['status' => 'paused']),
+                'resume' => $m->update(['status' => 'up', 'last_checked_at' => now()]),
+            };
+        }
+
+        $n = $monitors->count();
+        $verb = ['delete' => 'deleted', 'pause' => 'paused', 'resume' => 'resumed'][$data['action']];
+        AuditLog::record('monitor', "Bulk {$data['action']} on {$n} monitor(s)");
+
+        return back()->with('status', "{$n} monitor(s) {$verb}.");
+    }
+
     /**
      * Demo/manual way to record a check against a monitor. In production this
      * would be posted by an external checker process or the install agent;

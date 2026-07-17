@@ -52,6 +52,15 @@ class StatusPageController extends Controller
         return view('status-pages.show', compact('statusPage'));
     }
 
+    /** Public, unauthenticated status page reachable by slug. */
+    public function publicShow(string $slug)
+    {
+        $statusPage = StatusPage::where('slug', $slug)->where('is_public', true)->firstOrFail();
+        $statusPage->load('monitors');
+
+        return view('status-pages.public', compact('statusPage'));
+    }
+
     public function edit(StatusPage $statusPage)
     {
         $this->guard($statusPage);
@@ -88,6 +97,19 @@ class StatusPageController extends Controller
         AuditLog::record('status_page', "Deleted status page {$name}");
 
         return redirect()->route('status-pages.index')->with('status', "Status page \"{$name}\" deleted.");
+    }
+
+    /** Delete the selected status pages (visibility-scoped). */
+    public function bulkDestroy(Request $request)
+    {
+        $ids = array_filter((array) $request->input('ids', []));
+        $pages = StatusPage::whereIn('id', $ids)->get()
+            ->filter(fn ($p) => $p->isVisibleTo(auth()->user()));
+        foreach ($pages as $p) {
+            $p->delete();
+        }
+
+        return back()->with('status', $pages->count() . ' status page(s) deleted.');
     }
 
     private function guard(StatusPage $statusPage): void
