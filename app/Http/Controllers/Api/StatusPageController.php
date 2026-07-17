@@ -21,7 +21,7 @@ class StatusPageController extends Controller
     {
         $data = $this->validated($request);
         $data['user_id'] = $this->resolveOwner($request);
-        $monitorIds = $data['monitor_ids'] ?? [];
+        $monitorIds = $this->allowedMonitorIds($request, $data['monitor_ids'] ?? []);
         unset($data['monitor_ids']);
         $data['slug'] = $data['slug'] ?: Str::slug($data['name']);
 
@@ -53,7 +53,7 @@ class StatusPageController extends Controller
         }
 
         $hasMonitorIds = $request->has('monitor_ids');
-        $monitorIds = $data['monitor_ids'] ?? [];
+        $monitorIds = $this->allowedMonitorIds($request, $data['monitor_ids'] ?? []);
         unset($data['monitor_ids']);
 
         if (isset($data['slug'])) {
@@ -76,6 +76,16 @@ class StatusPageController extends Controller
         $statusPage->delete();
 
         return response()->noContent();
+    }
+
+    /** Restrict synced monitors to those the caller may actually see. */
+    private function allowedMonitorIds(Request $request, array $ids): array
+    {
+        if ($request->user()->isAdmin() || empty($ids)) {
+            return $ids;
+        }
+
+        return \App\Models\Monitor::visibleTo($request->user())->whereIn('id', $ids)->pluck('id')->all();
     }
 
     /** Admins may assign an explicit owner; everyone else owns what they create. */
