@@ -58,6 +58,7 @@ Route::middleware(['auth', 'security.policy'])->group(function () {
 
     // Incidents (read + acknowledge/resolve).
     Route::get('incidents', [IncidentController::class, 'index'])->name('incidents.index');
+    Route::delete('incidents/bulk', [IncidentController::class, 'bulkDestroy'])->name('incidents.bulk-destroy');
     Route::get('incidents/{incident}', [IncidentController::class, 'show'])->name('incidents.show');
     Route::post('incidents/{incident}/ack', [IncidentController::class, 'acknowledge'])->name('incidents.ack');
     Route::post('incidents/{incident}/resolve', [IncidentController::class, 'resolve'])->name('incidents.resolve');

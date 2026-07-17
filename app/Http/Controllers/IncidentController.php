@@ -63,6 +63,31 @@ class IncidentController extends Controller
         return back()->with('status', 'Incident resolved.');
     }
 
+    /**
+     * Bulk-delete selected incidents (downtime history rows). Only operates on
+     * the ids explicitly submitted, scoped to what the current user may see.
+     */
+    public function bulkDestroy(Request $request)
+    {
+        $data = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer'],
+        ]);
+
+        $user = auth()->user();
+        $ids = Incident::visibleTo($user)->whereIn('id', $data['ids'])->pluck('id');
+
+        if ($ids->isEmpty()) {
+            return back()->with('warning', 'No matching incidents were selected.');
+        }
+
+        $count = Incident::visibleTo($user)->whereIn('id', $ids->all())->delete();
+
+        AuditLog::record('incident', "Bulk deleted {$count} incident".($count === 1 ? '' : 's').'.');
+
+        return back()->with('status', $count.' incident'.($count === 1 ? '' : 's').' deleted.');
+    }
+
     private function guard(Incident $incident): void
     {
         abort_unless($incident->isVisibleTo(auth()->user()), 403);
