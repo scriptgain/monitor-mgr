@@ -52,6 +52,9 @@ Route::get('/brand/favicon-apple', [FaviconController::class, 'appleIcon'])->nam
 // Public status page, reachable by slug without authentication.
 Route::get('/status/{slug}', [StatusPageController::class, 'publicShow'])->name('status.public');
 
+// Documentation (public — reachable from the in-app help icon).
+Route::view('/docs', 'docs')->name('docs');
+
 // Authenticated control panel.
 Route::middleware(['auth', 'security.policy'])->group(function () {
     Route::get('/', DashboardController::class)->name('dashboard');
