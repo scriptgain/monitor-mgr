@@ -59,10 +59,15 @@
                 <thead>
                     <tr>
                         <th class="w-10">
-                            <input type="checkbox" x-on:change="toggleAll($event)"
-                                :checked="selected.length > 0 && selected.length === allIds.length"
-                                :disabled="allIds.length === 0"
-                                class="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500 align-middle" aria-label="Select all incidents">
+                            <button type="button" role="switch"
+                                :aria-checked="(allIds.length > 0 && selected.length === allIds.length).toString()"
+                                @click="selected = (allIds.length > 0 && selected.length === allIds.length) ? [] : [...allIds]"
+                                :class="(allIds.length > 0 && selected.length === allIds.length) ? 'bg-brand-600' : 'bg-slate-300'"
+                                class="relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors align-middle disabled:opacity-40"
+                                :disabled="allIds.length === 0" aria-label="Select all incidents">
+                                <span :class="(allIds.length > 0 && selected.length === allIds.length) ? 'translate-x-6' : 'translate-x-1'"
+                                    class="inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform"></span>
+                            </button>
                         </th>
                         <th>Monitor</th><th>Started</th><th>Resolved</th><th>Duration</th><th>Cause</th><th>Status</th><th class="text-right">Actions</th>
                     </tr>
@@ -71,8 +76,15 @@
                     @foreach ($incidents as $i)
                         <tr>
                             <td>
-                                <input type="checkbox" x-model.number="selected" value="{{ $i->id }}" x-on:change="confirming = false"
-                                    class="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500 align-middle" aria-label="Select incident">
+                                <button type="button" role="switch"
+                                    :aria-checked="selected.includes({{ $i->id }}).toString()"
+                                    @click="selected.includes({{ $i->id }}) ? selected.splice(selected.indexOf({{ $i->id }}), 1) : selected.push({{ $i->id }}); confirming = false"
+                                    :class="selected.includes({{ $i->id }}) ? 'bg-brand-600' : 'bg-slate-300'"
+                                    class="relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors align-middle"
+                                    aria-label="Select incident">
+                                    <span :class="selected.includes({{ $i->id }}) ? 'translate-x-6' : 'translate-x-1'"
+                                        class="inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform"></span>
+                                </button>
                             </td>
                             <td><a href="{{ route('monitors.show', $i->monitor) }}" class="text-brand-700 hover:underline font-medium">{{ optional($i->monitor)->name ?? 'Unknown' }}</a></td>
                             <td class="text-slate-500">{{ $i->started_at->format('M j, Y g:i A') }}</td>
