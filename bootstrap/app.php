@@ -20,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->trustProxies(at: ['127.0.0.1', '::1']);
         $middleware->alias([
             'api.token' => \App\Http\Middleware\AuthenticateApiToken::class,
+            'agent.host' => \App\Http\Middleware\AuthenticateHostAgent::class,
             'security.policy' => \App\Http\Middleware\EnforceSecurityPolicy::class,
             'firewall' => \App\Http\Middleware\FirewallGuard::class,
             'license.offline' => \App\Http\Middleware\EnforceLicense::class,

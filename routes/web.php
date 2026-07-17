@@ -11,6 +11,7 @@ use App\Http\Controllers\FaviconController;
 use App\Http\Controllers\FirewallController;
 use App\Http\Controllers\HostSslController;
 use App\Http\Controllers\GeneralSettingsController;
+use App\Http\Controllers\HostController;
 use App\Http\Controllers\IncidentController;
 use App\Http\Controllers\InstanceLicenseController;
 use App\Http\Controllers\MonitorController;
@@ -59,6 +60,15 @@ Route::middleware(['auth', 'security.policy'])->group(function () {
     Route::post('monitors/bulk', [MonitorController::class, 'bulkAction'])->name('monitors.bulk');
     Route::resource('monitors', MonitorController::class);
     Route::post('monitors/{monitor}/checks', [MonitorController::class, 'storeCheck'])->name('monitors.checks.store');
+
+    // Hosts (agent-based server monitoring): list, live dashboard, enrollment.
+    Route::get('hosts', [HostController::class, 'index'])->name('hosts.index');
+    Route::get('hosts/create', [HostController::class, 'create'])->name('hosts.create');
+    Route::post('hosts', [HostController::class, 'store'])->name('hosts.store');
+    Route::get('hosts/{host}', [HostController::class, 'show'])->name('hosts.show');
+    Route::get('hosts/{host}/metrics', [HostController::class, 'metricsJson'])->name('hosts.metrics');
+    Route::post('hosts/{host}/token', [HostController::class, 'token'])->name('hosts.token');
+    Route::delete('hosts/{host}', [HostController::class, 'destroy'])->name('hosts.destroy');
 
     // Incidents (read + acknowledge/resolve).
     Route::get('incidents', [IncidentController::class, 'index'])->name('incidents.index');

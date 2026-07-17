@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AlertContactController;
 use App\Http\Controllers\Api\ApiTokenController;
+use App\Http\Controllers\Api\HostAgentController;
 use App\Http\Controllers\Api\CheckController;
 use App\Http\Controllers\Api\IncidentController;
 use App\Http\Controllers\Api\MetricController;
@@ -29,4 +30,13 @@ Route::prefix('v1')->name('api.')->middleware('api.token')->group(function () {
     // Administration.
     Route::apiResource('users', UserController::class);
     Route::apiResource('api-tokens', ApiTokenController::class)->only(['index', 'store', 'destroy'])->parameters(['api-tokens' => 'apiToken']);
+});
+
+// Host-agent API. MonitorMGR agents dial out to these. Enroll is one-time-token
+// based; ingest uses the per-host agent key. Base: /api/agent/v1
+Route::prefix('agent/v1')->name('agent.')->group(function () {
+    Route::post('enroll', [HostAgentController::class, 'enroll']);
+    Route::middleware('agent.host')->group(function () {
+        Route::post('metrics', [HostAgentController::class, 'ingest']);
+    });
 });
