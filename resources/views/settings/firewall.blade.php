@@ -161,7 +161,7 @@
         {{-- ============ TAB 2: IP Bans ============ --}}
         <div x-show="tab === 'bans'" x-cloak>
             <x-card title="IP Bans" subtitle="A banned IP receives a 403 on every request. Expired bans no longer apply.">
-                <form method="POST" action="{{ route('settings.firewall.ban') }}" class="grid grid-cols-1 sm:grid-cols-4 gap-4 items-end">
+                <form method="POST" action="{{ route('settings.firewall.ban') }}" class="grid grid-cols-1 sm:grid-cols-4 gap-4 items-start">
                     @csrf
                     <x-field label="IP Address" for="ban_ip" :error="$errors->first('ip')">
                         <x-input id="ban_ip" name="ip" placeholder="203.0.113.10" :value="old('ip')" />
@@ -172,7 +172,8 @@
                     <x-field label="Expires At" for="ban_expires" hint="Blank = permanent." :error="$errors->first('expires_at')">
                         <x-input id="ban_expires" name="expires_at" type="datetime-local" :value="old('expires_at')" />
                     </x-field>
-                    <div>
+                    <div class="space-y-1.5">
+                        <label class="block text-sm font-medium text-slate-700 select-none" aria-hidden="true">&nbsp;</label>
                         <x-button type="submit" icon="shield" class="w-full">Ban IP</x-button>
                     </div>
                 </form>
@@ -195,7 +196,7 @@
                         }
                     }">
                     @if ($bans->isEmpty())
-                        <x-empty-state icon="shield-check" title="No Banned IPs" description="Manually ban an address above, or let failed-login protection do it automatically." />
+                        <x-empty-state icon="shield" title="No Banned IPs" description="Manually ban an address above, or let failed-login protection do it automatically." />
                     @else
                         {{-- Hidden form the bulk action posts through. --}}
                         <form method="POST" action="{{ route('settings.firewall.bulk') }}" x-ref="bulkForm" class="hidden">
@@ -341,7 +342,7 @@
             <x-card title="Recent Failed Attempts"
                 subtitle="Failed sign-ins per IP within the last {{ $settings['lockout_minutes'] }} minutes." flush>
                 @if ($attempts->isEmpty())
-                    <x-empty-state icon="shield-check" title="No Recent Failures" description="Failed sign-in attempts within the window appear here." />
+                    <x-empty-state icon="shield" title="No Recent Failures" description="Failed sign-in attempts within the window appear here." />
                 @else
                     <x-table flush>
                         <thead>
