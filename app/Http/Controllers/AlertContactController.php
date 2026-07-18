@@ -68,6 +68,30 @@ class AlertContactController extends Controller
         return redirect()->route('alerts.index')->with('status', "Alert contact \"{$name}\" deleted.");
     }
 
+    /**
+     * Bulk-delete selected alert contacts. Only the submitted ids are touched,
+     * scoped to contacts the current user is allowed to see.
+     */
+    public function bulkDestroy(Request $request)
+    {
+        $data = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer'],
+        ]);
+
+        $ids = AlertContact::visibleTo(auth()->user())->whereIn('id', $data['ids'])->pluck('id');
+
+        if ($ids->isEmpty()) {
+            return back()->with('warning', 'No matching alert contacts were selected.');
+        }
+
+        $count = AlertContact::whereIn('id', $ids->all())->delete();
+
+        AuditLog::record('alert_contact', "Bulk deleted {$count} alert contact".($count === 1 ? '' : 's').'.');
+
+        return back()->with('status', $count.' alert contact'.($count === 1 ? '' : 's').' deleted.');
+    }
+
     private function guard(AlertContact $alert): void
     {
         abort_unless($alert->isVisibleTo(auth()->user()), 403);

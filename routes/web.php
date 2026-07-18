@@ -65,6 +65,7 @@ Route::middleware(['auth', 'security.policy'])->group(function () {
     Route::post('monitors/{monitor}/checks', [MonitorController::class, 'storeCheck'])->name('monitors.checks.store');
 
     // Hosts (agent-based server monitoring): list, live dashboard, enrollment.
+    Route::delete('hosts/bulk', [HostController::class, 'bulkDestroy'])->name('hosts.bulk-destroy');
     Route::get('hosts', [HostController::class, 'index'])->name('hosts.index');
     Route::get('hosts/create', [HostController::class, 'create'])->name('hosts.create');
     Route::post('hosts', [HostController::class, 'store'])->name('hosts.store');
@@ -85,6 +86,7 @@ Route::middleware(['auth', 'security.policy'])->group(function () {
     Route::resource('status-pages', StatusPageController::class)->parameters(['status-pages' => 'statusPage']);
 
     // Alert contacts (notification destinations).
+    Route::delete('alerts/bulk', [AlertContactController::class, 'bulkDestroy'])->name('alerts.bulk-destroy');
     Route::resource('alerts', AlertContactController::class)->parameters(['alerts' => 'alert'])->except(['show']);
 
     // Settings.

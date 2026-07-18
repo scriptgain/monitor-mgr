@@ -77,6 +77,28 @@ class HostController extends Controller
         return redirect()->route('hosts.index')->with('status', 'Host removed.');
     }
 
+    /**
+     * Bulk-delete selected hosts. Only the submitted ids are touched, and
+     * only hosts the current user is allowed to see.
+     */
+    public function bulkDestroy(Request $request)
+    {
+        $data = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer'],
+        ]);
+
+        $ids = MonitoredHost::visibleTo($request->user())->whereIn('id', $data['ids'])->pluck('id');
+
+        if ($ids->isEmpty()) {
+            return back()->with('warning', 'No matching hosts were selected.');
+        }
+
+        $count = MonitoredHost::whereIn('id', $ids->all())->delete();
+
+        return back()->with('status', $count.' host'.($count === 1 ? '' : 's').' deleted.');
+    }
+
     /** Live metrics feed for the dashboard (polled by Alpine on an interval). */
     public function metricsJson(Request $request, MonitoredHost $host)
     {
