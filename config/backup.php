@@ -16,6 +16,8 @@ return [
     // one-click sign-in button for the configured email. Blank disables it.
     // Use an IP prefix (e.g. an IPv6 /64 like "2600:8800:2184:f00:") so it
     // survives the client's rotating low-order bits.
-    'autofill_ip' => env('DEV_AUTOFILL_IP', ''),
-    'autofill_email' => env('DEV_AUTOFILL_EMAIL', ''),
+    'autofill_ip' => '',
+    'autofill_email' => '',
+    // Read-only public demo: auto-login + block every write.
+    'demo' => (bool) env('DEMO_MODE', false),
 ];
