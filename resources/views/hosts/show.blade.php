@@ -81,7 +81,7 @@
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div class="bg-white rounded-xl ring-1 ring-slate-200 shadow-sm p-5">
                         <div class="flex items-center gap-3">
-                            <span class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-brand-50 text-brand-600 ring-1 ring-brand-100"><x-icon name="pulse" class="w-5 h-5" /></span>
+                            <span class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-brand-50 text-brand-600 ring-1 ring-brand-200"><x-icon name="pulse" class="w-5 h-5" /></span>
                             <p class="text-sm font-medium text-slate-500">Load Average</p>
                         </div>
                         <p class="mt-3 text-2xl font-semibold text-slate-900 tabular">
@@ -92,7 +92,7 @@
                     </div>
                     <div class="bg-white rounded-xl ring-1 ring-slate-200 shadow-sm p-5">
                         <div class="flex items-center gap-3">
-                            <span class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-brand-50 text-brand-600 ring-1 ring-brand-100"><x-icon name="clock" class="w-5 h-5" /></span>
+                            <span class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-brand-50 text-brand-600 ring-1 ring-brand-200"><x-icon name="clock" class="w-5 h-5" /></span>
                             <p class="text-sm font-medium text-slate-500">Uptime</p>
                         </div>
                         <p class="mt-3 text-2xl font-semibold text-slate-900 tabular" x-text="fmtUptime(latest.uptime)"></p>
@@ -100,7 +100,7 @@
                     </div>
                     <div class="bg-white rounded-xl ring-1 ring-slate-200 shadow-sm p-5">
                         <div class="flex items-center gap-3">
-                            <span class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-brand-50 text-brand-600 ring-1 ring-brand-100"><x-icon name="cloud" class="w-5 h-5" /></span>
+                            <span class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-brand-50 text-brand-600 ring-1 ring-brand-200"><x-icon name="cloud" class="w-5 h-5" /></span>
                             <p class="text-sm font-medium text-slate-500">Network</p>
                         </div>
                         <p class="mt-3 text-lg font-semibold text-slate-900 tabular">
