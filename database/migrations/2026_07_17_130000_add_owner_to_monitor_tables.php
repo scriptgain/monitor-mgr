@@ -10,7 +10,15 @@ return new class extends Migration
     {
         // Monitors, alert contacts, and status pages become owned resources.
         // Checks/incidents/metrics inherit their owner from the parent monitor.
+        //
+        // Dated after the 2026_07_15_3000xx create migrations: this shipped
+        // originally as 2026_07_14_120000, which ran before those tables
+        // existed and broke every fresh install. Guarded so installs that
+        // already ran it under the old name re-run it harmlessly.
         foreach (['monitors', 'alert_contacts', 'status_pages'] as $table) {
+            if (! Schema::hasTable($table) || Schema::hasColumn($table, 'user_id')) {
+                continue;
+            }
             Schema::table($table, function (Blueprint $t) {
                 $t->foreignId('user_id')->nullable()->after('id')
                     ->constrained()->nullOnDelete();
@@ -21,6 +29,9 @@ return new class extends Migration
     public function down(): void
     {
         foreach (['monitors', 'alert_contacts', 'status_pages'] as $table) {
+            if (! Schema::hasTable($table) || ! Schema::hasColumn($table, 'user_id')) {
+                continue;
+            }
             Schema::table($table, function (Blueprint $t) {
                 $t->dropConstrainedForeignId('user_id');
             });
