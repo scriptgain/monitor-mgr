@@ -3,7 +3,7 @@
 **Server and service monitoring with incidents, alerts, and public status pages.**
 Self-hosted, by [ScriptGain](https://scriptgain.com).
 
-**[Try the live demo →](https://monitor-demo.scriptgain.com)** — no signup required.
+**[Try the live demo →](https://monitor-demo.scriptgain.com)** No signup required.
 
 ## Who it's for
 
@@ -35,7 +35,7 @@ Users and roles, two-factor authentication, an IP firewall with an escape hatch,
 API tokens, a full audit log, database backups, host and SSL settings, and
 in-place signed updates.
 
-## Current state — read this before you buy
+## Current state: read this before you buy
 
 **Version 1.1.2.** Monitors, checks, incidents with acknowledge and resolve,
 metrics, status pages, alert contacts, and the whole operations shell are built and
@@ -50,7 +50,7 @@ through the API or the panel.
 In practice that means: **heartbeat and agent monitoring work today; unattended
 external uptime checking does not.** The scheduled checker is the next layer of
 work. If you need "tell me when my website goes down" with nothing installed
-anywhere, this is not there yet — and the demo will look like it is, because the
+anywhere, this is not there yet, and the demo will look like it is, because the
 demo data is seeded.
 
 ## Install
