@@ -1,58 +1,100 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# MonitorMGR
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+**Server and service monitoring with incidents, alerts, and public status pages.**
+Self-hosted, by [ScriptGain](https://scriptgain.com).
 
-## About Laravel
+**[Try the live demo →](https://monitor-demo.scriptgain.com)** — no signup required.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Who it's for
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+Sysadmins and MSPs who want their monitoring, incident history, and customer-facing
+status page on infrastructure they control, without a per-check subscription or a
+seat count.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## What it does
 
-## Learning Laravel
+**Track what matters**
+Monitors cover HTTP(S), TCP ports, ping, keyword-in-page, SSL certificate expiry,
+DNS, heartbeats from your own cron jobs, and server agents reporting system health.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+**Turn failures into incidents**
+A failing monitor opens an incident with a timeline. Acknowledge it so the team
+knows it is being handled, then resolve it. History is kept, so "how often does
+this break" has an answer.
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+**Collect server metrics**
+Agents report CPU, memory, disk, and load per host, so a slow server is visible
+before it is a dead one.
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+**Tell customers before they ask**
+Public status pages with the monitors you choose to expose. Alert contacts get
+notified when something breaks.
 
-## Agentic Development
+**Run it like production**
+Users and roles, two-factor authentication, an IP firewall with an escape hatch,
+API tokens, a full audit log, database backups, host and SSL settings, and
+in-place signed updates.
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+## Current state — read this before you buy
 
-```bash
-composer require laravel/boost --dev
+**Version 1.1.2.** Monitors, checks, incidents with acknowledge and resolve,
+metrics, status pages, alert contacts, and the whole operations shell are built and
+in production use.
 
-php artisan boost:install
+**There is no polling loop yet.** MonitorMGR does not currently reach out on a
+schedule to test your URLs and ports by itself. Check results and metrics arrive
+by **push**: an agent enrolls and reports in over the API (`/api/.../ingest`),
+heartbeat monitors are pinged by your own cron, and results can be recorded
+through the API or the panel.
+
+In practice that means: **heartbeat and agent monitoring work today; unattended
+external uptime checking does not.** The scheduled checker is the next layer of
+work. If you need "tell me when my website goes down" with nothing installed
+anywhere, this is not there yet — and the demo will look like it is, because the
+demo data is seeded.
+
+## Install
+
+Point a fresh Debian or Ubuntu server at your domain and run, as root:
+
+```
+curl -fsSL https://install.scriptgain.com | sudo bash -s -- monitor-mgr DOMAIN=monitor.example.com SSL=1 EMAIL=you@example.com
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+Then open `https://your.domain/setup` to create the first account and enter your
+licence key.
 
-## Contributing
+## Where things live
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+| Surface | Path |
+| --- | --- |
+| Console | `/` |
+| Public status pages | `/status/...` |
+| First-run setup | `/setup` |
+| Agent and API endpoints | `/api` |
 
-## Code of Conduct
+## Running it
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+Monitors, alert contacts, status pages, and every operator setting are managed in
+the console rather than in files on the server.
 
-## Security Vulnerabilities
+Maintenance tasks from the command line:
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+| Command | What it does |
+| --- | --- |
+| `php artisan monitor:maintenance` | Prunes telemetry and resolved incidents, trims the audit log. Runs hourly. |
+| `php artisan license:check-online` | Re-validates your licence. |
+| `php artisan app:update` | Applies a signed release. |
+| `php artisan db-backup:run` | Backs up the database. |
+| `php artisan firewall:clear` | Gets you back in if an IP rule locks you out. |
 
-## License
+## Requirements
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+A Linux server with PHP 8.3 and MySQL or MariaDB. Metric history is the thing that
+grows; the maintenance task prunes it on a retention window you set.
+
+## Licensing
+
+One activation per licence by default, validated against
+`https://scriptgain.com/v1`. Buy or manage yours at
+[scriptgain.com/products/monitormanager](https://scriptgain.com/products/monitormanager).
