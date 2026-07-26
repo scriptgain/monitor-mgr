@@ -1,3 +1,3 @@
-module github.com/thelonelyfrog/monitor/agent
+module github.com/scriptgain/monitor-agent
 
 go 1.26

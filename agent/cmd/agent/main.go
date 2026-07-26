@@ -22,9 +22,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/thelonelyfrog/monitor/agent/internal/api"
-	"github.com/thelonelyfrog/monitor/agent/internal/config"
-	"github.com/thelonelyfrog/monitor/agent/internal/metrics"
+	"github.com/scriptgain/monitor-agent/internal/api"
+	"github.com/scriptgain/monitor-agent/internal/config"
+	"github.com/scriptgain/monitor-agent/internal/metrics"
 )
 
 var version = "dev"

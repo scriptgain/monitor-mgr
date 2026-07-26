@@ -15,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/thelonelyfrog/monitor/agent/internal/metrics"
+	"github.com/scriptgain/monitor-agent/internal/metrics"
 )
 
 const apiPrefix = "/api/agent/v1"
