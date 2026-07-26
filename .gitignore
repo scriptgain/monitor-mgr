@@ -33,3 +33,6 @@ Thumbs.db
 *.pem
 *.key
 *.crt
+
+# Go monitor agent now lives in the private scriptgain/monitor-agent repo.
+/agent/
