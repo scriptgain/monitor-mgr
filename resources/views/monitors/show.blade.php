@@ -3,6 +3,12 @@
         :subtitle="$monitor->typeLabel() . ' · ' . $monitor->target . ($monitor->port ? ':' . $monitor->port : '')"
         :back="['href' => route('monitors.index'), 'label' => 'Monitors']">
         <x-slot:actions>
+            @if ($isPolled)
+                <form method="POST" action="{{ route('monitors.run', $monitor) }}" class="inline">
+                    @csrf
+                    <x-button type="submit" variant="secondary" icon="pulse">Check Now</x-button>
+                </form>
+            @endif
             <x-button variant="secondary" icon="edit" href="{{ route('monitors.edit', $monitor) }}">Edit</x-button>
         </x-slot:actions>
     </x-page-header>
@@ -103,9 +109,18 @@
                 </x-card>
             @endif
 
-            {{-- Demo/manual check recorder: real checks would arrive via an
-                 external checker process or agent; this simulates one for now. --}}
-            <x-card title="Record A Check" subtitle="Simulates a check result (demo, no live poller yet).">
+            @if ($monitor->isHeartbeatType())
+                <x-card title="Heartbeat URL" subtitle="Have the job call this on success. Silence past the interval opens an incident.">
+                    <p class="font-mono text-xs break-all rounded-lg bg-slate-50 ring-1 ring-inset ring-slate-200 px-3 py-2 text-slate-700">{{ $monitor->heartbeatUrl() }}</p>
+                    <p class="mt-3 text-sm text-slate-500">In a crontab:</p>
+                    <p class="mt-1 font-mono text-xs break-all rounded-lg bg-slate-50 ring-1 ring-inset ring-slate-200 px-3 py-2 text-slate-700">your-job.sh &amp;&amp; curl -fsS -m 10 {{ $monitor->heartbeatUrl() }}</p>
+                    <p class="mt-3 text-sm text-slate-500">Add <span class="font-mono">?status=down&amp;message=...</span> to report a failure instead of waiting for the deadline, which is {{ $monitor->heartbeatDeadline() }}s of silence.</p>
+                </x-card>
+            @endif
+
+            {{-- Manual override. The poller writes checks now; this stays for
+                 forcing a state on a monitor the panel cannot reach itself. --}}
+            <x-card title="Record A Check" subtitle="Force a result by hand, without waiting for the poller.">
                 <form method="POST" action="{{ route('monitors.checks.store', $monitor) }}" class="space-y-4">
                     @csrf
                     <x-field label="Result" for="check_status" required>

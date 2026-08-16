@@ -21,17 +21,22 @@ class IntegrationController extends Controller
             'integrations_telegram_token' => ['nullable', 'string', 'max:255'],
             'integrations_telegram_chat_id' => ['nullable', 'string', 'max:64'],
             'integrations_webhook_url' => ['nullable', 'url', 'max:500'],
+            'sms_gateway_url' => ['nullable', 'url', 'max:500'],
+            'sms_gateway_token' => ['nullable', 'string', 'max:255'],
         ]);
 
         foreach (IntegrationNotifier::CHANNELS as $ch) {
             Setting::put("integrations_{$ch}_enabled", $request->boolean("integrations_{$ch}_enabled") ? '1' : '0');
         }
-        foreach (['integrations_slack_url', 'integrations_discord_url', 'integrations_webhook_url', 'integrations_telegram_chat_id'] as $k) {
+        foreach (['integrations_slack_url', 'integrations_discord_url', 'integrations_webhook_url', 'integrations_telegram_chat_id', 'sms_gateway_url'] as $k) {
             Setting::put($k, $data[$k] ?? '');
         }
         // Telegram token is a secret: keep the stored value when left blank.
         if (! empty($data['integrations_telegram_token'])) {
             Setting::put('integrations_telegram_token', $data['integrations_telegram_token']);
+        }
+        if (! empty($data['sms_gateway_token'])) {
+            Setting::put('sms_gateway_token', $data['sms_gateway_token']);
         }
 
         return redirect()->route('settings.integrations.edit')->with('status', 'Integrations saved.');

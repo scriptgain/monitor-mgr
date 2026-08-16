@@ -30,15 +30,40 @@ class IntegrationNotifier
     /** Send to one channel regardless of its enabled flag (used by the test button). */
     public static function send(string $channel, string $title, string $body = ''): bool
     {
-        $text = trim($title . "\n" . $body);
         try {
             return match ($channel) {
-                'slack' => self::post(Setting::get('integrations_slack_url'), ['text' => $text]),
-                'discord' => self::post(Setting::get('integrations_discord_url'), ['content' => $text]),
-                'webhook' => self::post(Setting::get('integrations_webhook_url'), [
+                'slack' => self::deliver('slack', Setting::get('integrations_slack_url'), $title, $body),
+                'discord' => self::deliver('discord', Setting::get('integrations_discord_url'), $title, $body),
+                'webhook' => self::deliver('webhook', Setting::get('integrations_webhook_url'), $title, $body),
+                'telegram' => self::telegram(trim($title."\n".$body)),
+                default => false,
+            };
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
+    /**
+     * Send to an explicit URL rather than the one in Settings. Alert contacts
+     * each carry their own destination, so incident delivery routes through
+     * here while the Settings-configured channels still go through send().
+     *
+     * @param  array<string, mixed>  $extra  merged into the generic webhook body
+     */
+    public static function deliver(string $channel, ?string $url, string $title, string $body = '', array $extra = []): bool
+    {
+        if (! $url) {
+            return false;
+        }
+
+        $text = trim($title."\n".$body);
+        try {
+            return match ($channel) {
+                'slack' => self::post($url, ['text' => $text]),
+                'discord' => self::post($url, ['content' => $text]),
+                'webhook' => self::post($url, array_merge([
                     'title' => $title, 'body' => $body, 'text' => $text, 'product' => config('brand.name'),
-                ]),
-                'telegram' => self::telegram($text),
+                ], $extra)),
                 default => false,
             };
         } catch (\Throwable $e) {

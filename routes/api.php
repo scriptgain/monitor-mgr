@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AlertContactController;
 use App\Http\Controllers\Api\ApiTokenController;
+use App\Http\Controllers\Api\HeartbeatController;
 use App\Http\Controllers\Api\HostAgentController;
 use App\Http\Controllers\Api\CheckController;
 use App\Http\Controllers\Api\IncidentController;
@@ -22,7 +23,9 @@ Route::prefix('v1')->name('api.')->middleware('api.token')->group(function () {
     Route::apiResource('incidents', IncidentController::class)->only(['index', 'show']);
     Route::post('incidents/{incident}/acknowledge', [IncidentController::class, 'acknowledge'])->name('incidents.acknowledge');
     Route::post('incidents/{incident}/resolve', [IncidentController::class, 'resolve'])->name('incidents.resolve');
-    Route::apiResource('checks', CheckController::class)->only(['index', 'show']);
+    // `store` is the write path for an external checker: results posted here go
+    // through the same recorder as the poller, incidents and alerts included.
+    Route::apiResource('checks', CheckController::class)->only(['index', 'show', 'store']);
     Route::apiResource('metrics', MetricController::class)->only(['index', 'show']);
     Route::apiResource('alert-contacts', AlertContactController::class)->parameters(['alert-contacts' => 'alertContact']);
     Route::apiResource('status-pages', StatusPageController::class);
@@ -31,6 +34,12 @@ Route::prefix('v1')->name('api.')->middleware('api.token')->group(function () {
     Route::apiResource('users', UserController::class);
     Route::apiResource('api-tokens', ApiTokenController::class)->only(['index', 'store', 'destroy'])->parameters(['api-tokens' => 'apiToken']);
 });
+
+// Heartbeat (dead-man's switch). Public: the random token in the path is the
+// credential. GET as well as POST, because the caller is usually a crontab.
+Route::match(['get', 'post'], 'hb/{token}', HeartbeatController::class)
+    ->middleware('throttle:120,1')
+    ->name('heartbeat.ping');
 
 // Host-agent API. MonitorMGR agents dial out to these. Enroll is one-time-token
 // based; ingest uses the per-host agent key. Base: /api/agent/v1

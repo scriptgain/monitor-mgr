@@ -1,0 +1,4 @@
+{{ $bodyText }}
+
+--
+{{ config('brand.name') }}

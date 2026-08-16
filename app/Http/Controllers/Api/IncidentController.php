@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Incident;
+use App\Services\AlertDispatcher;
 use Illuminate\Http\Request;
 
 class IncidentController extends Controller
@@ -30,6 +31,7 @@ class IncidentController extends Controller
 
         if (! $incident->acknowledged_at) {
             $incident->update(['acknowledged_at' => now()]);
+            AlertDispatcher::incidentAcknowledged($incident->load('monitor'));
         }
 
         return $incident->fresh();
@@ -47,6 +49,7 @@ class IncidentController extends Controller
             if ($incident->monitor && $incident->monitor->status === 'down') {
                 $incident->monitor->update(['status' => 'up']);
             }
+            AlertDispatcher::incidentResolved($incident->load('monitor'));
         }
 
         return $incident->fresh();

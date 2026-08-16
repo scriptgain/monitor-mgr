@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AuditLog;
 use App\Models\Incident;
+use App\Services\AlertDispatcher;
 use Illuminate\Http\Request;
 
 class IncidentController extends Controller
@@ -40,8 +41,14 @@ class IncidentController extends Controller
     public function acknowledge(Incident $incident)
     {
         $this->guard($incident);
+        $alreadyAcknowledged = $incident->isAcknowledged();
         $incident->update(['acknowledged_at' => now()]);
         AuditLog::record('incident', "Acknowledged incident #{$incident->id}");
+
+        // Tell the other contacts someone has picked it up, once.
+        if (! $alreadyAcknowledged) {
+            AlertDispatcher::incidentAcknowledged($incident->load('monitor'));
+        }
 
         return back()->with('status', 'Incident acknowledged.');
     }
@@ -58,6 +65,7 @@ class IncidentController extends Controller
                 $incident->monitor->update(['status' => 'up']);
             }
             AuditLog::record('incident', "Resolved incident #{$incident->id}");
+            AlertDispatcher::incidentResolved($incident->load('monitor'));
         }
 
         return back()->with('status', 'Incident resolved.');
