@@ -3,6 +3,7 @@
     $t = $trigger ?? null;
     $inp = 'block w-full rounded-lg border-0 bg-white px-3 py-2 text-sm text-slate-900 ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-inset focus:ring-brand-500';
     $metric = old('metric', $t?->metric ?? 'cpu_pct');
+    $target = old('target', $t?->monitored_host_id ? 'host:' . $t->monitored_host_id : ($t?->host_group_id ? 'group:' . $t->host_group_id : ''));
     $isCustomMetric = ! array_key_exists($metric, \App\Models\Trigger::METRICS);
 @endphp
 
@@ -10,12 +11,23 @@
     <x-field label="Name" for="name" required :error="$errors->first('name')">
         <x-input id="name" name="name" :value="old('name', $t?->name)" required autofocus placeholder="e.g. Disk above 90%" />
     </x-field>
-    <x-field label="Applies To" for="monitored_host_id" hint="Leave on every host for a fleet-wide rule. A host rule replaces the fleet rule for the same metric." :error="$errors->first('monitored_host_id')">
-        <select id="monitored_host_id" name="monitored_host_id" class="{{ $inp }}">
+    <x-field label="Applies To" for="target" hint="The most specific rule for a metric wins: one host beats a group, a group beats the whole fleet." :error="$errors->first('target')">
+        <select id="target" name="target" class="{{ $inp }}">
             <option value="">Every host</option>
-            @foreach ($hosts as $host)
-                <option value="{{ $host->id }}" @selected(old('monitored_host_id', $t?->monitored_host_id) == $host->id)>{{ $host->name }}</option>
-            @endforeach
+            @if ($groups->isNotEmpty())
+                <optgroup label="Groups">
+                    @foreach ($groups as $group)
+                        <option value="group:{{ $group->id }}" @selected($target === 'group:' . $group->id)>{{ $group->name }}</option>
+                    @endforeach
+                </optgroup>
+            @endif
+            @if ($hosts->isNotEmpty())
+                <optgroup label="Hosts">
+                    @foreach ($hosts as $host)
+                        <option value="host:{{ $host->id }}" @selected($target === 'host:' . $host->id)>{{ $host->name }}</option>
+                    @endforeach
+                </optgroup>
+            @endif
         </select>
     </x-field>
 </div>

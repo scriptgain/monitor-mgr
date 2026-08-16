@@ -12,6 +12,10 @@
                     <x-input id="name" name="name" value="{{ old('name') }}" placeholder="web-01" required autofocus />
                 </x-field>
 
+                <x-field label="Tags" for="tags" hint="Comma separated. Handy for filtering the list later." :error="$errors->first('tags')">
+                    <x-input id="tags" name="tags" value="{{ old('tags') }}" placeholder="production, web, eu-west" />
+                </x-field>
+
                 <x-field label="Notes" for="notes" :error="$errors->first('notes')">
                     <textarea id="notes" name="notes" rows="3"
                         class="block w-full rounded-lg border-0 bg-white px-3 py-2 text-sm text-slate-900 ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-brand-500"

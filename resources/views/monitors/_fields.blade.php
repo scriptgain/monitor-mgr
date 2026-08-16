@@ -42,6 +42,10 @@
     </select>
 </x-field>
 
+<x-field label="Tags" for="tags" hint="Comma separated. Handy for filtering the list later." :error="$errors->first('tags')">
+    <x-input id="tags" name="tags" :value="old('tags', implode(', ', $m?->tagList() ?? []))" placeholder="production, api" />
+</x-field>
+
 <x-field label="Notes" for="notes" :error="$errors->first('notes')">
     <textarea id="notes" name="notes" rows="2" class="{{ $inp }}">{{ old('notes', $m?->notes) }}</textarea>
 </x-field>

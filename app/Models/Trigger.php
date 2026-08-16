@@ -36,7 +36,7 @@ class Trigger extends Model
     public const SEVERITIES = ['info' => 'Info', 'warning' => 'Warning', 'average' => 'Average', 'high' => 'High', 'disaster' => 'Disaster'];
 
     protected $fillable = [
-        'user_id', 'monitored_host_id', 'name', 'metric', 'operator', 'threshold',
+        'user_id', 'monitored_host_id', 'host_group_id', 'name', 'metric', 'operator', 'threshold',
         'recovery_threshold', 'for_seconds', 'severity', 'is_enabled', 'notes',
     ];
 
@@ -55,6 +55,11 @@ class Trigger extends Model
         return $this->belongsTo(MonitoredHost::class, 'monitored_host_id');
     }
 
+    public function group(): BelongsTo
+    {
+        return $this->belongsTo(HostGroup::class, 'host_group_id');
+    }
+
     public function incidents(): HasMany
     {
         return $this->hasMany(Incident::class);
@@ -65,10 +70,29 @@ class Trigger extends Model
         return $this->metric === 'agent_offline';
     }
 
-    /** A rule with no host attached applies to every host. */
+    /** A rule with neither a host nor a group applies to every host. */
     public function isGlobal(): bool
     {
-        return $this->monitored_host_id === null;
+        return $this->monitored_host_id === null && $this->host_group_id === null;
+    }
+
+    /**
+     * How specific this rule is, for resolving two rules on the same metric.
+     * Higher wins: one host beats a group, a group beats the whole fleet.
+     */
+    public function specificity(): int
+    {
+        if ($this->monitored_host_id !== null) {
+            return 2;
+        }
+
+        return $this->host_group_id !== null ? 1 : 0;
+    }
+
+    /** What the rule is aimed at, for the list. */
+    public function targetName(): string
+    {
+        return $this->host?->name ?? $this->group?->name ?? 'Every host';
     }
 
     public function metricLabel(): string

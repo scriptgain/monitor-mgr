@@ -84,8 +84,12 @@
                 'active' => request()->routeIs('dashboard')],
             ['type' => 'link', 'label' => 'Monitors', 'href' => route('monitors.index'), 'icon' => 'pulse',
                 'active' => request()->routeIs('monitors.*')],
-            ['type' => 'link', 'label' => 'Hosts', 'href' => route('hosts.index'), 'icon' => 'server',
-                'active' => request()->routeIs('hosts.*')],
+            ['type' => 'group', 'label' => 'Hosts', 'icon' => 'server',
+                'active' => request()->routeIs('hosts.*') || request()->routeIs('host-groups.*'),
+                'items' => [
+                    ['All Hosts', route('hosts.index'), 'server', request()->routeIs('hosts.*')],
+                    ['Host Groups', route('host-groups.index'), 'folder', request()->routeIs('host-groups.*')],
+                ]],
             ['type' => 'link', 'label' => 'Incidents', 'href' => route('incidents.index'), 'icon' => 'warning',
                 'active' => request()->routeIs('incidents.*')],
             ['type' => 'link', 'label' => 'Status Pages', 'href' => route('status-pages.index'), 'icon' => 'globe',
@@ -204,6 +208,7 @@
         $sectionMap = [
             'monitors' => ['Monitors', 'monitors.index'],
             'hosts' => ['Hosts', 'hosts.index'],
+            'host-groups' => ['Host Groups', 'host-groups.index'],
             'incidents' => ['Incidents', 'incidents.index'],
             'status-pages' => ['Status Pages', 'status-pages.index'],
             'alerts' => ['Alert Contacts', 'alerts.index'],

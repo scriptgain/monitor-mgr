@@ -19,9 +19,13 @@ class MonitorController extends Controller
     {
         $user = auth()->user();
         $status = $request->query('status');
+        $tag = trim((string) $request->query('tag'));
         $query = Monitor::visibleTo($user);
         if ($status && isset(Monitor::STATUSES[$status])) {
             $query->where('status', $status);
+        }
+        if ($tag !== '') {
+            $query->tagged($tag);
         }
         $monitors = $query->with('owner:id,name')
             ->withCount(['incidents as open_incidents_count' => fn ($q) => $q->whereNull('resolved_at')])
@@ -33,7 +37,10 @@ class MonitorController extends Controller
             'paused' => Monitor::visibleTo($user)->where('status', 'paused')->count(),
         ];
 
-        return view('monitors.index', compact('monitors', 'status', 'stats'));
+        $allTags = Monitor::visibleTo($user)->pluck('tags')
+            ->flatMap(fn ($t) => (array) $t)->unique()->sort()->values();
+
+        return view('monitors.index', compact('monitors', 'status', 'stats', 'tag', 'allTags'));
     }
 
     public function create()
@@ -184,6 +191,7 @@ class MonitorController extends Controller
             'expected' => ['nullable', 'string', 'max:255'],
             'status' => ['required', 'in:' . implode(',', array_keys(Monitor::STATUSES))],
             'notes' => ['nullable', 'string', 'max:2000'],
+            'tags' => ['nullable', 'string', 'max:500'],
             'owner_id' => ['nullable', Rule::exists('users', 'id')],
         ]);
     }

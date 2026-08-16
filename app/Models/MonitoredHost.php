@@ -2,16 +2,18 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasTags;
 use App\Models\Concerns\OwnedByUser;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
 class MonitoredHost extends Model
 {
-    use OwnedByUser;
+    use HasTags, OwnedByUser;
 
-    protected $fillable = ['user_id', 'name', 'hostname', 'os', 'arch', 'cpu_cores', 'agent_version', 'status', 'notes'];
+    protected $fillable = ['user_id', 'name', 'hostname', 'os', 'arch', 'cpu_cores', 'agent_version', 'status', 'notes', 'tags'];
 
     protected $hidden = ['api_key', 'enrollment_token'];
 
@@ -21,7 +23,13 @@ class MonitoredHost extends Model
             'last_seen_at' => 'datetime',
             'boot_time' => 'datetime',
             'cpu_cores' => 'integer',
+            'tags' => 'array',
         ];
+    }
+
+    public function groups(): BelongsToMany
+    {
+        return $this->belongsToMany(HostGroup::class, 'host_group_monitored_host');
     }
 
     public function metrics(): HasMany

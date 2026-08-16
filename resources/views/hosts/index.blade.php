@@ -5,6 +5,27 @@
         </x-slot:actions>
     </x-page-header>
 
+    @if ($groups->isNotEmpty() || $allTags->isNotEmpty())
+        <div class="mb-4 flex flex-wrap items-center gap-2">
+            <a href="{{ route('hosts.index') }}"
+               @class(['inline-flex items-center rounded-lg px-3 py-1.5 text-sm ring-1 ring-inset transition',
+                       'bg-brand-50 text-brand-700 ring-brand-200 font-medium' => ! $activeGroup && $activeTag === '',
+                       'text-slate-600 ring-slate-200 hover:bg-slate-50' => $activeGroup || $activeTag !== ''])>All</a>
+            @foreach ($groups as $g)
+                <a href="{{ route('hosts.index', ['group' => $g->id]) }}"
+                   @class(['inline-flex items-center rounded-lg px-3 py-1.5 text-sm ring-1 ring-inset transition',
+                           'bg-brand-50 text-brand-700 ring-brand-200 font-medium' => $activeGroup === $g->id,
+                           'text-slate-600 ring-slate-200 hover:bg-slate-50' => $activeGroup !== $g->id])>{{ $g->name }}</a>
+            @endforeach
+            @foreach ($allTags as $t)
+                <a href="{{ route('hosts.index', ['tag' => $t]) }}"
+                   @class(['inline-flex items-center rounded-lg px-2.5 py-1 text-xs font-mono ring-1 ring-inset transition',
+                           'bg-brand-50 text-brand-700 ring-brand-200' => $activeTag === $t,
+                           'text-slate-500 ring-slate-200 hover:bg-slate-50' => $activeTag !== $t])>#{{ $t }}</a>
+            @endforeach
+        </div>
+    @endif
+
     @php
         $online = $hosts->filter(fn ($h) => $h->effective_status === 'online')->count();
         $offline = $hosts->filter(fn ($h) => $h->effective_status === 'offline')->count();

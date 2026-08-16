@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasTags;
 use App\Models\Concerns\OwnedByUser;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -10,7 +11,7 @@ use Illuminate\Support\Str;
 
 class Monitor extends Model
 {
-    use OwnedByUser;
+    use HasTags, OwnedByUser;
 
     public const TYPES = [
         'http' => 'HTTP(S)',
@@ -31,7 +32,7 @@ class Monitor extends Model
 
     protected $fillable = [
         'user_id', 'name', 'type', 'target', 'port', 'interval_seconds', 'timeout_seconds',
-        'expected', 'status', 'last_checked_at', 'uptime_ratio', 'notes',
+        'expected', 'status', 'last_checked_at', 'uptime_ratio', 'notes', 'tags',
     ];
 
     protected function casts(): array
@@ -40,6 +41,7 @@ class Monitor extends Model
             'last_checked_at' => 'datetime',
             'uptime_ratio' => 'float',
             'port' => 'integer',
+            'tags' => 'array',
             'interval_seconds' => 'integer',
             'timeout_seconds' => 'integer',
         ];

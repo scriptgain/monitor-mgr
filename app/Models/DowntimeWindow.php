@@ -23,7 +23,7 @@ class DowntimeWindow extends Model
     public const DAYS = [0 => 'Sun', 1 => 'Mon', 2 => 'Tue', 3 => 'Wed', 4 => 'Thu', 5 => 'Fri', 6 => 'Sat'];
 
     protected $fillable = [
-        'user_id', 'name', 'monitor_id', 'monitored_host_id', 'kind',
+        'user_id', 'name', 'monitor_id', 'monitored_host_id', 'host_group_id', 'kind',
         'starts_at', 'ends_at', 'days_of_week', 'start_time', 'end_time', 'is_enabled', 'notes',
     ];
 
@@ -47,10 +47,15 @@ class DowntimeWindow extends Model
         return $this->belongsTo(MonitoredHost::class, 'monitored_host_id');
     }
 
+    public function group(): BelongsTo
+    {
+        return $this->belongsTo(HostGroup::class, 'host_group_id');
+    }
+
     /** Null subject means the window covers everything. */
     public function subjectName(): string
     {
-        return $this->monitor?->name ?? $this->host?->name ?? 'Everything';
+        return $this->monitor?->name ?? $this->host?->name ?? $this->group?->name ?? 'Everything';
     }
 
     /** Is this window covering the given moment? */
@@ -87,14 +92,20 @@ class DowntimeWindow extends Model
     /** Does this window apply to the thing the incident is about? */
     public function coversSubject(Incident $incident): bool
     {
-        if ($this->monitor_id === null && $this->monitored_host_id === null) {
+        if ($this->monitor_id === null && $this->monitored_host_id === null && $this->host_group_id === null) {
             return true;
         }
         if ($this->monitor_id !== null) {
             return $this->monitor_id === $incident->monitor_id;
         }
+        if ($this->monitored_host_id !== null) {
+            return $this->monitored_host_id === $incident->monitored_host_id;
+        }
 
-        return $this->monitored_host_id === $incident->monitored_host_id;
+        // A group window covers a host incident when that host is a member. It
+        // never covers a monitor incident: monitors are not in host groups.
+        return $incident->monitored_host_id !== null
+            && $this->group?->hosts()->whereKey($incident->monitored_host_id)->exists();
     }
 
     /**
