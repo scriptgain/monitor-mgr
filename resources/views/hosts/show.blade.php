@@ -125,6 +125,23 @@
                     </div>
                 </div>
 
+                {{-- History range. Anything past the raw retention window is served
+                     from hourly or daily rollups, which is why a 30 day chart is
+                     possible at all. --}}
+                <div class="flex flex-wrap items-center gap-2">
+                    <template x-for="r in ranges" :key="r.key">
+                        <button type="button" x-on:click="setRange(r.key)"
+                            :class="range === r.key
+                                ? 'bg-brand-50 text-brand-700 ring-brand-200 font-medium'
+                                : 'text-slate-600 ring-slate-200 hover:bg-slate-50'"
+                            class="rounded-lg px-3 py-1.5 text-sm ring-1 ring-inset transition"
+                            x-text="r.label"></button>
+                    </template>
+                    <span class="flex-1"></span>
+                    <span class="text-xs text-slate-400" x-show="resolution !== 'raw'" x-cloak
+                          x-text="resolution === 'day' ? 'Daily averages' : 'Hourly averages'"></span>
+                </div>
+
                 {{-- Sparklines --}}
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <template x-for="s in sparks()" :key="s.key">
@@ -137,7 +154,12 @@
                                 <path :d="areaPath(s.values)" :fill="s.fill" opacity="0.12" />
                                 <path :d="linePath(s.values)" fill="none" :stroke="s.stroke" stroke-width="2" vector-effect="non-scaling-stroke" />
                             </svg>
-                            <p class="mt-1 text-xs text-slate-400">Last <span x-text="s.values.length"></span> samples</p>
+                            <p class="mt-1 text-xs text-slate-400">
+                                <span x-text="s.values.length"></span> points
+                                <span x-show="s.values.length" x-cloak>
+                                    &middot; <span x-text="spanLabel(s.values)"></span>
+                                </span>
+                            </p>
                         </div>
                     </template>
                 </div>
@@ -208,6 +230,9 @@
                 url,
                 latest: null,
                 history: { cpu: [], mem: [], disk: [] },
+                ranges: @js(\App\Services\HostHistory::options()),
+                range: '30m',
+                resolution: 'raw',
                 meta: {},
                 status: @js($host->effective_status),
                 cores: @js($host->cpu_cores ?? '—'),
@@ -215,11 +240,19 @@
                 ringCirc: 2 * Math.PI * 32,
                 init() {
                     this.fetchNow();
-                    setInterval(() => this.fetchNow(), 5000);
+                    // Matched to the agent's default reporting interval. At 5s
+                    // this refetched six times per change.
+                    setInterval(() => this.fetchNow(), 30000);
+                },
+                setRange(key) {
+                    this.range = key;
+                    this.fetchNow();
                 },
                 async fetchNow() {
                     try {
-                        const r = await fetch(this.url, { headers: { 'Accept': 'application/json' } });
+                        const sep = this.url.includes('?') ? '&' : '?';
+                        const r = await fetch(this.url + sep + 'range=' + encodeURIComponent(this.range),
+                            { headers: { 'Accept': 'application/json' } });
                         if (!r.ok) return;
                         const d = await r.json();
                         this.status = d.status;
@@ -248,16 +281,29 @@
                     return [
                         { key: 'cpu', label: 'CPU History', values: this.history.cpu || [], last: (this.latest?.cpu_pct) || 0, stroke: '#0ea5e9', fill: '#0ea5e9' },
                         { key: 'mem', label: 'Memory History', values: this.history.mem || [], last: (this.latest?.mem_pct) || 0, stroke: '#8b5cf6', fill: '#8b5cf6' },
+                        { key: 'disk', label: 'Disk History', values: this.history.disk || [], last: (this.latest?.disk_pct) || 0, stroke: '#f59e0b', fill: '#f59e0b' },
                     ];
                 },
+                // Points arrive as [isoTimestamp, value]. The x axis stays
+                // positional: the series is already evenly spaced by the bucket
+                // it came from, and a true time axis would need gap handling
+                // that a 300 pixel sparkline cannot show anyway.
                 linePath(values) {
                     if (!values || values.length < 2) return '';
                     const w = 300, h = 60, n = values.length;
-                    return values.map((v, i) => {
+                    return values.map((p, i) => {
+                        const v = Array.isArray(p) ? p[1] : p;
                         const x = (i / (n - 1)) * w;
                         const y = h - (Math.max(0, Math.min(100, v)) / 100) * h;
                         return (i === 0 ? 'M' : 'L') + x.toFixed(1) + ' ' + y.toFixed(1);
                     }).join(' ');
+                },
+                spanLabel(values) {
+                    if (!values || !values.length) return '';
+                    const first = Array.isArray(values[0]) ? values[0][0] : null;
+                    if (!first) return '';
+                    const d = new Date(first);
+                    return isNaN(d) ? '' : 'since ' + d.toLocaleString();
                 },
                 areaPath(values) {
                     const line = this.linePath(values);

@@ -77,9 +77,17 @@ aim at one host, a named group of hosts, or everything, and the most specific
 rule for a metric wins. Tags are free-form labels on hosts and monitors, and the
 lists filter by them.
 
-**What is not here yet:** on-call rotations, templates with inheritance, and long
-term trends. Metrics are kept raw for seven days and then deleted, so there is
-no history beyond that yet.
+**History outlives the raw samples.** Raw agent samples are kept for seven days,
+because they are the expensive rows. Before they age out, an hourly rollup
+preserves each hour's average, minimum and maximum, and a daily rollup does the
+same for each day, so a month or a year of history costs a fraction of a week of
+raw. The host charts pick their resolution from the range you ask for. The sweep
+will not prune a sample that has not been rolled up yet, so a scheduler that was
+switched off costs disk rather than data.
+
+**What is not here yet:** on-call rotations, templates with inheritance, and real
+SLA reporting. The uptime figure shown today is the last hundred checks, which is
+a sample count rather than a time window.
 
 ## Install
 
