@@ -21,6 +21,7 @@ use App\Http\Controllers\InstanceLicenseController;
 use App\Http\Controllers\MonitorController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PasswordController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\StatusPageController;
 use App\Http\Controllers\TriggerController;
 use App\Http\Controllers\TwoFactorController;
@@ -86,6 +87,10 @@ Route::middleware(['auth', 'security.policy'])->group(function () {
     Route::get('hosts/{host}/metrics', [HostController::class, 'metricsJson'])->name('hosts.metrics');
     Route::post('hosts/{host}/token', [HostController::class, 'token'])->name('hosts.token');
     Route::delete('hosts/{host}', [HostController::class, 'destroy'])->name('hosts.destroy');
+
+    // Availability reporting.
+    Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
+    Route::get('reports/export', [ReportController::class, 'export'])->name('reports.export');
 
     // Host groups: the target that sits between one host and the whole fleet.
     Route::resource('host-groups', HostGroupController::class)->except(['show'])->parameters(['host-groups' => 'hostGroup']);

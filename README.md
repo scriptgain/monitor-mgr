@@ -85,9 +85,14 @@ raw. The host charts pick their resolution from the range you ask for. The sweep
 will not prune a sample that has not been rolled up yet, so a scheduler that was
 switched off costs disk rather than data.
 
-**What is not here yet:** on-call rotations, templates with inheritance, and real
-SLA reporting. The uptime figure shown today is the last hundred checks, which is
-a sample count rather than a time window.
+**Availability is measured in time, not samples.** A Reports page gives uptime
+over 24 hours, 7, 30 or 90 days for every monitor and host, exported as CSV, and
+public status pages show a labelled figure with a daily strip for the last 90
+days. It is computed from incident durations, so an outage counts for how long it
+lasted rather than for how many checks it spoiled, and planned downtime is
+excluded rather than held against you.
+
+**What is not here yet:** on-call rotations and templates with inheritance.
 
 ## Install
 

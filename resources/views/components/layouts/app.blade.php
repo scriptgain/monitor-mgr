@@ -92,8 +92,15 @@
                 ]],
             ['type' => 'link', 'label' => 'Incidents', 'href' => route('incidents.index'), 'icon' => 'warning',
                 'active' => request()->routeIs('incidents.*')],
-            ['type' => 'link', 'label' => 'Status Pages', 'href' => route('status-pages.index'), 'icon' => 'globe',
-                'active' => request()->routeIs('status-pages.*')],
+            // Reports and Status Pages are the same question asked twice: how did
+            // we do, told to us and told to customers. Grouped so the bar stays
+            // at six items and never scrolls sideways.
+            ['type' => 'group', 'label' => 'Reporting', 'icon' => 'book',
+                'active' => request()->routeIs('reports.*') || request()->routeIs('status-pages.*'),
+                'items' => [
+                    ['Availability', route('reports.index'), 'book', request()->routeIs('reports.*')],
+                    ['Status Pages', route('status-pages.index'), 'globe', request()->routeIs('status-pages.*')],
+                ]],
             // Triggers and Alerts collapse into one dropdown rather than becoming a
             // seventh and eighth top-level tab, which is what would start the nav
             // scrolling sideways on a laptop.
@@ -210,6 +217,7 @@
             'hosts' => ['Hosts', 'hosts.index'],
             'host-groups' => ['Host Groups', 'host-groups.index'],
             'incidents' => ['Incidents', 'incidents.index'],
+            'reports' => ['Reports', 'reports.index'],
             'status-pages' => ['Status Pages', 'status-pages.index'],
             'alerts' => ['Alert Contacts', 'alerts.index'],
             'triggers' => ['Triggers', 'triggers.index'],

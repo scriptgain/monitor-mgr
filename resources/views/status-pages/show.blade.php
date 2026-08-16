@@ -25,7 +25,7 @@
                             <td><a href="{{ route('monitors.show', $m) }}" class="text-brand-700 hover:underline font-medium">{{ $m->name }}</a></td>
                             <td class="text-slate-600">{{ $m->typeLabel() }}</td>
                             <td><x-badge :color="['up' => 'success', 'down' => 'danger', 'paused' => 'neutral'][$m->status] ?? 'neutral'" dot>{{ $m->statusLabel() }}</x-badge></td>
-                            <td class="tabular text-slate-500">{{ number_format($m->uptime_ratio, 1) }}%</td>
+                            <td class="tabular text-slate-500">{{ number_format($m->uptime_ratio, 1) }}%<span class="text-slate-400 text-xs"> last 100</span></td>
                         </tr>
                     @endforeach
                 </tbody>

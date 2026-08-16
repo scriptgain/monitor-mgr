@@ -70,7 +70,7 @@
                                 @if ($m->open_incidents_count) &middot; {{ $m->open_incidents_count }} open @endif
                             </x-badge>
                         </td>
-                        <td class="tabular text-slate-500">{{ number_format($m->uptime_ratio, 1) }}%</td>
+                        <td class="tabular text-slate-500">{{ number_format($m->uptime_ratio, 1) }}%<span class="text-slate-400 text-xs"> last 100</span></td>
                         <td class="text-slate-500">{{ optional($m->last_checked_at)->diffForHumans() ?? 'Never' }}</td>
                         <td class="text-right"><x-icon-button :href="route('monitors.show', $m)" icon="eye" title="Open" /></td>
                     </tr>
