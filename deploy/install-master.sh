@@ -45,6 +45,8 @@ apt-get install -y \
   "php${PHP_VER}-xml" "php${PHP_VER}-curl" "php${PHP_VER}-zip" "php${PHP_VER}-bcmath" \
   "php${PHP_VER}-intl" "php${PHP_VER}-gd" \
   mariadb-server nginx
+# ping monitors shell out to fping when it is present, and fall back to iputils.
+apt-get install -y fping iputils-ping || true
 
 log "Installing Composer"
 if ! command -v composer >/dev/null; then
@@ -117,9 +119,11 @@ ln -sf /etc/nginx/sites-available/monitor.conf /etc/nginx/sites-enabled/monitor.
 nginx -t && systemctl reload nginx
 
 log "Scheduler + queue worker"
+# The scheduler is not optional here: it is what runs monitor:poll, so without
+# this cron entry no check ever executes.
 ( crontab -l 2>/dev/null | grep -v 'artisan schedule:run' ; \
   echo "* * * * * cd ${APP_DIR} && php${PHP_VER} artisan schedule:run >> /dev/null 2>&1" ) | crontab -
-# Queue worker via systemd.
+# Queue worker via systemd. Checks are queued jobs, so this must stay running.
 cat > /etc/systemd/system/monitor-queue.service <<UNIT
 [Unit]
 Description=MonitorMGR queue worker

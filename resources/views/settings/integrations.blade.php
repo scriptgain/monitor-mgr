@@ -59,6 +59,18 @@
             </div>
         </x-card>
 
+        <x-card title="SMS Gateway" subtitle="Where alert contacts of type SMS are delivered.">
+            <div class="space-y-5">
+                <x-field label="Gateway URL" for="sms_gateway_url" hint="The panel POSTs {to, message} as JSON. Any provider with an HTTP API works." :error="$errors->first('sms_gateway_url')">
+                    <x-input id="sms_gateway_url" name="sms_gateway_url" :value="$g('sms_gateway_url')" placeholder="https://sms.example.com/send" />
+                </x-field>
+                <x-field label="Bearer Token" for="sms_gateway_token" hint="Sent as an Authorization header. Leave blank to keep the stored value.">
+                    <x-input id="sms_gateway_token" name="sms_gateway_token" type="password" autocomplete="new-password" placeholder="••••••••" />
+                </x-field>
+                <p class="text-sm text-slate-500">Without a gateway, SMS alert contacts are skipped and the reason is written to the log.</p>
+            </div>
+        </x-card>
+
         <div class="flex items-center justify-end gap-2">
             <x-button variant="secondary" href="{{ route('settings.index') }}">Cancel</x-button>
             <x-button type="submit" icon="check">Save</x-button>

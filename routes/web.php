@@ -69,6 +69,7 @@ Route::middleware(['auth', 'security.policy'])->group(function () {
     Route::post('monitors/bulk', [MonitorController::class, 'bulkAction'])->name('monitors.bulk');
     Route::resource('monitors', MonitorController::class);
     Route::post('monitors/{monitor}/checks', [MonitorController::class, 'storeCheck'])->name('monitors.checks.store');
+    Route::post('monitors/{monitor}/run', [MonitorController::class, 'runCheck'])->name('monitors.run');
 
     // Hosts (agent-based server monitoring): list, live dashboard, enrollment.
     Route::delete('hosts/bulk', [HostController::class, 'bulkDestroy'])->name('hosts.bulk-destroy');

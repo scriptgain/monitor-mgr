@@ -41,17 +41,22 @@ in-place signed updates.
 metrics, status pages, alert contacts, and the whole operations shell are built and
 in production use.
 
-**There is no polling loop yet.** MonitorMGR does not currently reach out on a
-schedule to test your URLs and ports by itself. Check results and metrics arrive
-by **push**: an agent enrolls and reports in over the API (`/api/.../ingest`),
-heartbeat monitors are pinged by your own cron, and results can be recorded
-through the API or the panel.
+**The poller runs on a schedule.** `monitor:poll` fires every minute from the
+scheduler, queues a check for every monitor whose interval has elapsed, and marks
+heartbeat monitors that have gone quiet. HTTP, keyword, TCP, ping, DNS, and SSL
+expiry monitors are executed by the panel with nothing installed on the target.
+Two things have to be running for any of it to happen: `schedule:run` in cron and
+a `queue:work` worker. The installer sets up both.
 
-In practice that means: **heartbeat and agent monitoring work today; unattended
-external uptime checking does not.** The scheduled checker is the next layer of
-work. If you need "tell me when my website goes down" with nothing installed
-anywhere, this is not there yet, and the demo will look like it is, because the
-demo data is seeded.
+Server metrics still arrive by **push**, from an agent that dials out over HTTPS,
+so monitored hosts need no inbound firewall rule. Heartbeat monitors are pinged by
+your own cron at a URL the panel gives you, and an external checker can post its
+own results to `POST /api/v1/checks`.
+
+**What is not here yet:** threshold rules on server metrics. An agent reporting
+100% disk records the number but does not open an incident, and an agent that
+stops reporting reads as offline in the UI without alerting. Alerting today is
+driven by check results, not by metric values.
 
 ## Install
 

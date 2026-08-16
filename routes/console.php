@@ -8,6 +8,12 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
+// The poller. Every minute it queues a check for each monitor whose interval
+// has elapsed, and marks heartbeat monitors that have gone quiet. This is the
+// job that makes the product monitor anything: without `schedule:run` in cron
+// AND a running `queue:work`, no check is ever executed.
+Schedule::command('monitor:poll')->everyMinute()->withoutOverlapping();
+
 // Housekeeping sweep. The command enforces the configured maintenance window,
 // so it is safe to attempt hourly (installer wires `schedule:run` cron).
 Schedule::command('monitor:maintenance')->hourly()->withoutOverlapping();
