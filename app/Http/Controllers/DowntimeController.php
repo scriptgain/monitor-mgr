@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Concerns\ManagesOwners;
 use App\Models\AuditLog;
 use App\Models\DowntimeWindow;
+use App\Models\HostGroup;
 use App\Models\Monitor;
 use App\Models\MonitoredHost;
 use Illuminate\Http\Request;
@@ -18,7 +19,7 @@ class DowntimeController extends Controller
     public function index()
     {
         $windows = DowntimeWindow::visibleTo(auth()->user())
-            ->with(['monitor:id,name', 'host:id,name', 'owner:id,name'])
+            ->with(['monitor:id,name', 'host:id,name', 'group:id,name', 'owner:id,name'])
             ->latest()
             ->paginate(25);
 
@@ -80,6 +81,7 @@ class DowntimeController extends Controller
             'owners' => $this->assignableOwners(),
             'monitors' => Monitor::visibleTo(auth()->user())->orderBy('name')->get(['id', 'name']),
             'hosts' => MonitoredHost::visibleTo(auth()->user())->orderBy('name')->get(['id', 'name']),
+            'groups' => HostGroup::visibleTo(auth()->user())->orderBy('name')->get(['id', 'name']),
             'window' => null,
         ], $extra);
     }
@@ -94,7 +96,7 @@ class DowntimeController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => ['required', 'string', 'max:160'],
             'kind' => ['required', Rule::in(array_keys(DowntimeWindow::KINDS))],
-            'subject' => ['nullable', 'string'],   // "monitor:5", "host:3", or blank for everything
+            'subject' => ['nullable', 'string'],   // "monitor:5", "host:3", "group:2", or blank for everything
             'starts_at' => ['nullable', 'date'],
             'ends_at' => ['nullable', 'date'],
             'days_of_week' => ['nullable', 'array'],
@@ -133,6 +135,7 @@ class DowntimeController extends Controller
         unset($data['subject']);
         $data['monitor_id'] = $type === 'monitor' ? (int) $id : null;
         $data['monitored_host_id'] = $type === 'host' ? (int) $id : null;
+        $data['host_group_id'] = $type === 'group' ? (int) $id : null;
 
         // Keep the irrelevant half of the schedule empty rather than stale, so a
         // window switched from weekly to one off cannot fire on last week's days.

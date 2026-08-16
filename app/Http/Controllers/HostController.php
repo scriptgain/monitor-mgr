@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AuditLog;
+use App\Models\HostGroup;
 use App\Models\HostMetric;
 use App\Models\MonitoredHost;
 use Illuminate\Http\Request;
@@ -14,12 +16,64 @@ class HostController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
+        $group = $request->integer('group') ?: null;
+        $tag = trim((string) $request->query('tag'));
+
         $hosts = MonitoredHost::visibleTo($user)
-            ->with('latestMetric')
+            ->with(['latestMetric', 'groups:id,name,color'])
+            ->when($group, fn ($q, $id) => $q->whereHas('groups', fn ($g) => $g->whereKey($id)))
+            ->when($tag !== '', fn ($q) => $q->tagged($tag))
             ->orderBy('name')
             ->get();
 
-        return view('hosts.index', compact('hosts'));
+        // Every tag actually in use, so the filter offers real options rather
+        // than a free text box that silently matches nothing.
+        $allTags = MonitoredHost::visibleTo($user)->pluck('tags')
+            ->flatMap(fn ($t) => (array) $t)->unique()->sort()->values();
+
+        return view('hosts.index', [
+            'hosts' => $hosts,
+            'groups' => HostGroup::visibleTo($user)->orderBy('name')->get(['id', 'name', 'color']),
+            'allTags' => $allTags,
+            'activeGroup' => $group,
+            'activeTag' => $tag,
+        ]);
+    }
+
+    public function edit(Request $request, MonitoredHost $host)
+    {
+        abort_unless($host->isVisibleTo($request->user()), 403);
+
+        return view('hosts.edit', [
+            'host' => $host->load('groups:id'),
+            'groups' => HostGroup::visibleTo($request->user())->orderBy('name')->get(['id', 'name']),
+        ]);
+    }
+
+    public function update(Request $request, MonitoredHost $host)
+    {
+        abort_unless($host->isVisibleTo($request->user()), 403);
+
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:120'],
+            'notes' => ['nullable', 'string', 'max:2000'],
+            'tags' => ['nullable', 'string', 'max:500'],
+            'groups' => ['nullable', 'array'],
+            'groups.*' => ['integer'],
+        ]);
+
+        $host->update([
+            'name' => $data['name'],
+            'notes' => $data['notes'] ?? null,
+            'tags' => $data['tags'] ?? [],
+        ]);
+        // Scoped, so a submitted id cannot attach a group the user cannot see.
+        $host->groups()->sync(
+            HostGroup::visibleTo($request->user())->whereIn('id', $data['groups'] ?? [])->pluck('id')
+        );
+        AuditLog::record('host', "Updated host {$host->name}");
+
+        return redirect()->route('hosts.show', $host)->with('status', 'Host updated.');
     }
 
     public function create()
@@ -32,12 +86,14 @@ class HostController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:120'],
             'notes' => ['nullable', 'string', 'max:2000'],
+            'tags' => ['nullable', 'string', 'max:500'],
         ]);
 
         $host = MonitoredHost::create([
             'user_id' => $request->user()->id,
             'name' => $data['name'],
             'notes' => $data['notes'] ?? null,
+            'tags' => $data['tags'] ?? [],
             'status' => 'pending',
         ]);
         $token = $host->issueEnrollmentToken();
@@ -50,7 +106,7 @@ class HostController extends Controller
     public function show(Request $request, MonitoredHost $host)
     {
         abort_unless($host->isVisibleTo($request->user()), 403);
-        $host->load('latestMetric');
+        $host->load(['latestMetric', 'groups']);
 
         return view('hosts.show', [
             'host' => $host,

@@ -30,22 +30,41 @@ class TriggerEvaluator
     }
 
     /**
-     * The rules in force for a host: global rules plus that host's own, with a
-     * host rule replacing the global one for the same metric. Without that
-     * override a fleet-wide "disk above 90" and a per-host "disk above 98" for
-     * the one box that always runs full would both fire.
+     * The rules in force for a host, resolved by specificity.
+     *
+     * Three scopes can name the same metric: the whole fleet, a group the host
+     * belongs to, and the host itself. Exactly one of them should apply, or a
+     * fleet-wide "disk above 90" and a per-host "disk above 98" for the box that
+     * always runs full would both fire and the narrower rule would be pointless.
+     * The most specific wins: host beats group beats fleet.
+     *
+     * A host in two groups that both name the same metric is genuinely
+     * ambiguous, and the tie is broken by the lower threshold, because the
+     * operator who wrote the stricter rule is the one who wanted to hear about
+     * it sooner.
      */
     public static function rulesFor(MonitoredHost $host): Collection
     {
+        $groupIds = $host->groups()->pluck('host_groups.id')->all();
+
         $rules = Trigger::query()
             ->where('is_enabled', true)
-            ->where(fn ($q) => $q->whereNull('monitored_host_id')->orWhere('monitored_host_id', $host->id))
+            ->where(function ($q) use ($host, $groupIds) {
+                $q->where(fn ($g) => $g->whereNull('monitored_host_id')->whereNull('host_group_id'))
+                    ->orWhere('monitored_host_id', $host->id)
+                    ->orWhereIn('host_group_id', $groupIds ?: [0]);
+            })
             ->get();
 
-        $specific = $rules->whereNotNull('monitored_host_id')->keyBy('metric');
-
         return $rules
-            ->reject(fn (Trigger $t) => $t->isGlobal() && $specific->has($t->metric))
+            ->groupBy('metric')
+            ->map(function (Collection $forMetric) {
+                $best = $forMetric->max(fn (Trigger $t) => $t->specificity());
+
+                return $forMetric->filter(fn (Trigger $t) => $t->specificity() === $best)
+                    ->sortBy('threshold')
+                    ->first();
+            })
             ->values();
     }
 

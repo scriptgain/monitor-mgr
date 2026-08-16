@@ -2,7 +2,9 @@
 @php
     $w = $window ?? null;
     $inp = 'block w-full rounded-lg border-0 bg-white px-3 py-2 text-sm text-slate-900 ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-inset focus:ring-brand-500';
-    $subject = old('subject', $w?->monitor_id ? 'monitor:' . $w->monitor_id : ($w?->monitored_host_id ? 'host:' . $w->monitored_host_id : ''));
+    $subject = old('subject', $w?->monitor_id ? 'monitor:' . $w->monitor_id
+        : ($w?->monitored_host_id ? 'host:' . $w->monitored_host_id
+        : ($w?->host_group_id ? 'group:' . $w->host_group_id : '')));
     $kind = old('kind', $w?->kind ?? 'once');
     $days = array_map('intval', (array) old('days_of_week', $w?->days_of_week ?? []));
 @endphp
@@ -15,6 +17,13 @@
         <x-field label="Applies To" for="subject" hint="Leave on everything to silence the whole panel for the window.">
             <select id="subject" name="subject" class="{{ $inp }}">
                 <option value="">Everything</option>
+                @if ($groups->isNotEmpty())
+                    <optgroup label="Host Groups">
+                        @foreach ($groups as $g)
+                            <option value="group:{{ $g->id }}" @selected($subject === 'group:' . $g->id)>{{ $g->name }}</option>
+                        @endforeach
+                    </optgroup>
+                @endif
                 @if ($monitors->isNotEmpty())
                     <optgroup label="Monitors">
                         @foreach ($monitors as $m)

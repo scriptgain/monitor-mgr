@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\ManagesOwners;
 use App\Models\AuditLog;
+use App\Models\HostGroup;
 use App\Models\MonitoredHost;
 use App\Models\Trigger;
 use Illuminate\Http\Request;
@@ -17,7 +18,7 @@ class TriggerController extends Controller
     public function index()
     {
         $triggers = Trigger::visibleTo(auth()->user())
-            ->with(['owner:id,name', 'host:id,name'])
+            ->with(['owner:id,name', 'host:id,name', 'group:id,name,color'])
             ->withCount(['incidents as open_incidents_count' => fn ($q) => $q->whereNull('resolved_at')])
             ->orderByDesc('is_enabled')->orderBy('metric')
             ->paginate(25);
@@ -108,6 +109,7 @@ class TriggerController extends Controller
         return array_merge([
             'owners' => $this->assignableOwners(),
             'hosts' => MonitoredHost::visibleTo(auth()->user())->orderBy('name')->get(['id', 'name']),
+            'groups' => HostGroup::visibleTo(auth()->user())->orderBy('name')->get(['id', 'name']),
             'trigger' => null,
         ], $extra);
     }
@@ -121,7 +123,7 @@ class TriggerController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'name' => ['required', 'string', 'max:160'],
-            'monitored_host_id' => ['nullable', Rule::exists('monitored_hosts', 'id')],
+            'target' => ['nullable', 'string'],   // "host:5", "group:2", or blank for the fleet
             // Free text so disk.<mount>.pct can be written for any mount the agent
             // reports; the dropdown covers everything else.
             'metric' => ['required', 'string', 'max:120', 'regex:/^([a-z0-9_]+|disk\..+\.pct)$/'],
@@ -152,6 +154,15 @@ class TriggerController extends Controller
             }
         });
 
-        return $validator->validate() + ['is_enabled' => $request->boolean('is_enabled')];
+        $data = $validator->validate();
+
+        // One select drives two nullable columns, so a rule aimed at both a host
+        // and a group is not a state the form can produce.
+        [$type, $id] = array_pad(explode(':', (string) ($data['target'] ?? '')), 2, null);
+        unset($data['target']);
+        $data['monitored_host_id'] = $type === 'host' ? (int) $id : null;
+        $data['host_group_id'] = $type === 'group' ? (int) $id : null;
+
+        return $data + ['is_enabled' => $request->boolean('is_enabled')];
     }
 }

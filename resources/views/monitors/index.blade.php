@@ -16,6 +16,15 @@
         @foreach (\App\Models\Monitor::STATUSES as $sc => $sl)
             <a href="{{ route('monitors.index', ['status' => $sc]) }}" @class(['px-3 py-1.5 rounded-lg font-medium', 'bg-brand-50 text-brand-700 ring-1 ring-inset ring-brand-200' => $status === $sc, 'text-slate-600 hover:bg-slate-100' => $status !== $sc])>{{ $sl }}</a>
         @endforeach
+        @if ($allTags->isNotEmpty())
+            <span class="mx-1 h-4 w-px bg-slate-200"></span>
+            @foreach ($allTags as $t)
+                <a href="{{ route('monitors.index', ['tag' => $t, 'status' => $status]) }}"
+                   @class(['px-2.5 py-1 rounded-lg text-xs font-mono ring-1 ring-inset',
+                           'bg-brand-50 text-brand-700 ring-brand-200' => $tag === $t,
+                           'text-slate-500 ring-slate-200 hover:bg-slate-50' => $tag !== $t])>#{{ $t }}</a>
+            @endforeach
+        @endif
     </div>
 
     @if ($monitors->isEmpty())

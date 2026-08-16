@@ -72,7 +72,12 @@ monitor, a host, or the whole panel, on a one off schedule or a weekly one that
 can run over midnight. Checks keep running through a window, so the history has
 no hole in it exactly where someone was changing things.
 
-**What is not here yet:** on-call rotations, host groups and templates, and long
+**Host groups and tags organize the fleet.** A trigger or a downtime window can
+aim at one host, a named group of hosts, or everything, and the most specific
+rule for a metric wins. Tags are free-form labels on hosts and monitors, and the
+lists filter by them.
+
+**What is not here yet:** on-call rotations, templates with inheritance, and long
 term trends. Metrics are kept raw for seven days and then deleted, so there is
 no history beyond that yet.
 

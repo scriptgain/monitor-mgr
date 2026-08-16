@@ -55,7 +55,13 @@
                                     <a href="{{ route('incidents.index', ['status' => 'open']) }}" class="ml-1 text-xs text-red-600 hover:underline">{{ $t->open_incidents_count }} open</a>
                                 @endif
                             </td>
-                            <td class="text-slate-600">{{ $t->host?->name ?? 'Every host' }}</td>
+                            <td class="text-slate-600">
+                                @if ($t->group)
+                                    <x-badge :color="$t->group->badgeColor()">{{ $t->group->name }}</x-badge>
+                                @else
+                                    {{ $t->host?->name ?? 'Every host' }}
+                                @endif
+                            </td>
                             <td class="text-slate-600">{{ $t->condition() }}</td>
                             <td class="text-slate-500 tabular">{{ $t->for_seconds ? $t->for_seconds . 's' : 'Immediately' }}</td>
                             <td><x-badge :color="['info' => 'neutral', 'warning' => 'warning', 'average' => 'warning', 'high' => 'danger', 'disaster' => 'danger'][$t->severity] ?? 'neutral'">{{ $t->severityLabel() }}</x-badge></td>

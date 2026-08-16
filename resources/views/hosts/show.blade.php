@@ -10,6 +10,7 @@
                     <span class="w-1.5 h-1.5 rounded-full" :class="statusDot()"></span>
                     <span x-text="statusLabel()">{{ ucfirst($host->effective_status) }}</span>
                 </span>
+                <x-button variant="secondary" size="sm" icon="edit" href="{{ route('hosts.edit', $host) }}">Edit</x-button>
                 <form method="POST" action="{{ route('hosts.destroy', $host) }}"
                       @submit.prevent="$dispatch('open-modal', 'delete-host')">
                     @csrf @method('DELETE')
@@ -18,6 +19,18 @@
                 </form>
             </x-slot:actions>
         </x-page-header>
+
+        @if ($host->groups->isNotEmpty() || $host->tagList())
+            <div class="mb-4 flex flex-wrap items-center gap-2">
+                @foreach ($host->groups as $g)
+                    <x-badge :color="$g->badgeColor()">{{ $g->name }}</x-badge>
+                @endforeach
+                @foreach ($host->tagList() as $t)
+                    <a href="{{ route('hosts.index', ['tag' => $t]) }}"
+                       class="inline-flex items-center rounded-lg px-2.5 py-1 text-xs font-mono text-slate-500 ring-1 ring-inset ring-slate-200 hover:bg-slate-50">#{{ $t }}</a>
+                @endforeach
+            </div>
+        @endif
 
         {{-- Enrollment instructions: shown until the agent first checks in. --}}
         <div x-show="!enrolled" x-cloak class="mb-6">

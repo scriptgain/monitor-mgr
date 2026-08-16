@@ -19,6 +19,13 @@ class TriggerEvaluatorTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        // Frozen, because every assertion here is about a window of time and the
+        // samples are laid down relative to "now". Without this the wall clock
+        // can advance mid-test and a sample meant to sit inside the window lands
+        // just outside it, which showed up as an intermittent failure rather
+        // than an honest one.
+        $this->freezeTime();
+
         // The seeded defaults are useful in production and noise in a test that
         // is asserting on one rule, so start from none.
         Trigger::query()->delete();
