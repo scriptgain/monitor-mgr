@@ -76,6 +76,23 @@ class CheckRecorder
         return $check;
     }
 
+    /**
+     * Recompute and persist the stored ratio.
+     *
+     * Public because the maintenance sweep needs it: pruning checks changes the
+     * window this is derived from, and without a refresh the column freezes at
+     * whatever the last recorded check saw.
+     */
+    public static function refreshUptimeRatio(Monitor $monitor): float
+    {
+        $ratio = self::uptimeRatio($monitor);
+        if ((float) $monitor->uptime_ratio !== $ratio) {
+            $monitor->forceFill(['uptime_ratio' => $ratio])->save();
+        }
+
+        return $ratio;
+    }
+
     /** Percentage of the recent check history that was up, to two decimals. */
     private static function uptimeRatio(Monitor $monitor): float
     {

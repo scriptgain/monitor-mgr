@@ -89,6 +89,78 @@ class DowntimeWindow extends Model
             : ($now >= $from || $now <= $to);
     }
 
+    /**
+     * How many seconds between `from` and `to` this window covers.
+     *
+     * `coversTime()` answers "right now", which is all alert suppression needs.
+     * Availability needs the overlap with an arbitrary past range, and for a
+     * weekly rule that recurs and can run over midnight that is a different
+     * question: the window may open and close several times inside the range.
+     *
+     * Walked day by day rather than solved arithmetically. A weekly window is at
+     * most a few hundred iterations over a ninety day report, and the closed
+     * form has to special case the midnight wrap, a range that starts mid-window,
+     * and a range shorter than one occurrence. The loop gets all three right by
+     * construction.
+     */
+    public function overlapSeconds(Carbon $from, Carbon $to): int
+    {
+        if (! $this->is_enabled || $to->lte($from)) {
+            return 0;
+        }
+
+        // Whole seconds, for the same reason AvailabilityCalculator normalizes:
+        // `now()` has microseconds and stored timestamps do not.
+        $from = $from->copy()->startOfSecond();
+        $to = $to->copy()->startOfSecond();
+
+        if ($this->kind === 'once') {
+            if (! $this->starts_at || ! $this->ends_at) {
+                return 0;
+            }
+
+            return self::intersect($from, $to, $this->starts_at, $this->ends_at);
+        }
+
+        if (! $this->start_time || ! $this->end_time) {
+            return 0;
+        }
+
+        $days = array_map('intval', (array) $this->days_of_week);
+        if ($days === []) {
+            return 0;
+        }
+
+        $seconds = 0;
+        // Start a day early: a window that opened yesterday evening and runs
+        // past midnight still covers the beginning of this range.
+        $cursor = $from->copy()->subDay()->startOfDay();
+        $limit = $to->copy()->endOfDay();
+
+        while ($cursor->lte($limit)) {
+            if (in_array((int) $cursor->dayOfWeek, $days, true)) {
+                $open = $cursor->copy()->setTimeFromTimeString(substr((string) $this->start_time, 0, 8));
+                $close = $cursor->copy()->setTimeFromTimeString(substr((string) $this->end_time, 0, 8));
+                if ($close->lte($open)) {
+                    $close->addDay(); // Runs over midnight into the next day.
+                }
+                $seconds += self::intersect($from, $to, $open, $close);
+            }
+            $cursor->addDay();
+        }
+
+        return min($seconds, (int) $from->diffInSeconds($to));
+    }
+
+    /** Seconds shared by two ranges. */
+    private static function intersect(Carbon $aFrom, Carbon $aTo, Carbon $bFrom, Carbon $bTo): int
+    {
+        $start = $aFrom->gt($bFrom) ? $aFrom : $bFrom;
+        $end = $aTo->lt($bTo) ? $aTo : $bTo;
+
+        return $end->gt($start) ? (int) $start->diffInSeconds($end) : 0;
+    }
+
     /** Does this window apply to the thing the incident is about? */
     public function coversSubject(Incident $incident): bool
     {

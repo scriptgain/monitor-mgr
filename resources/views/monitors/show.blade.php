@@ -19,7 +19,7 @@
             <x-card>
                 <div class="flex flex-wrap items-center gap-3">
                     <x-badge :color="['up' => 'success', 'down' => 'danger', 'paused' => 'neutral'][$monitor->status] ?? 'neutral'" dot>{{ $monitor->statusLabel() }}</x-badge>
-                    <span class="text-sm text-slate-500">Uptime <span class="font-medium tabular text-slate-700">{{ number_format($monitor->uptime_ratio, 2) }}%</span></span>
+                    <span class="text-sm text-slate-500">Last 100 checks <span class="font-medium tabular text-slate-700">{{ number_format($monitor->uptime_ratio, 2) }}%</span></span>
                     <span class="text-sm text-slate-500">Last checked <span class="font-medium text-slate-700">{{ optional($monitor->last_checked_at)->diffForHumans() ?? 'Never' }}</span></span>
                     <span class="flex-1"></span>
                     <x-delete-button :name="'del-mon'" :action="route('monitors.destroy', $monitor)"

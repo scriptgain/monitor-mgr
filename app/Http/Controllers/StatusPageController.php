@@ -6,6 +6,7 @@ use App\Http\Controllers\Concerns\ManagesOwners;
 use App\Models\AuditLog;
 use App\Models\Monitor;
 use App\Models\StatusPage;
+use App\Services\AvailabilityCalculator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -58,7 +59,25 @@ class StatusPageController extends Controller
         $statusPage = StatusPage::where('slug', $slug)->where('is_public', true)->firstOrFail();
         $statusPage->load('monitors');
 
-        return view('status-pages.public', compact('statusPage'));
+        // Real availability over a named period, plus a day by day strip. The
+        // page used to print `uptime_ratio`, which is the last hundred checks
+        // and therefore covers a length of time that depends on the monitor's
+        // interval: about ninety minutes on a one minute monitor, four days on
+        // an hourly one. It carried no period label, so a visitor had no way to
+        // know what they were reading.
+        $days = 90;
+        $to = now();
+        $from = $to->copy()->subDays(30);
+
+        $availability = [];
+        foreach ($statusPage->monitors as $monitor) {
+            $availability[$monitor->id] = [
+                'summary' => AvailabilityCalculator::for($monitor, $from, $to),
+                'daily' => AvailabilityCalculator::daily($monitor, $days),
+            ];
+        }
+
+        return view('status-pages.public', compact('statusPage', 'availability', 'days'));
     }
 
     public function edit(StatusPage $statusPage)
@@ -109,7 +128,7 @@ class StatusPageController extends Controller
             $p->delete();
         }
 
-        return back()->with('status', $pages->count() . ' status page(s) deleted.');
+        return back()->with('status', $pages->count().' status page(s) deleted.');
     }
 
     private function guard(StatusPage $statusPage): void
@@ -131,7 +150,7 @@ class StatusPageController extends Controller
     {
         return $request->validate([
             'name' => ['required', 'string', 'max:160'],
-            'slug' => ['nullable', 'string', 'max:160', 'alpha_dash', 'unique:status_pages,slug' . ($ignoreId ? ",{$ignoreId}" : '')],
+            'slug' => ['nullable', 'string', 'max:160', 'alpha_dash', 'unique:status_pages,slug'.($ignoreId ? ",{$ignoreId}" : '')],
             'is_public' => ['nullable', 'boolean'],
             'description' => ['nullable', 'string', 'max:2000'],
             'monitor_ids' => ['nullable', 'array'],

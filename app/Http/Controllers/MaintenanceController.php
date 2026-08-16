@@ -11,6 +11,7 @@ use App\Models\Metric;
 use App\Models\Monitor;
 use App\Models\MonitoredHost;
 use App\Models\Setting;
+use App\Services\CheckRecorder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
@@ -93,6 +94,17 @@ class MaintenanceController extends Controller
             $cutoff = now()->subDays($days);
             $counts['telemetry_pruned'] = Check::where('checked_at', '<', $cutoff)->delete()
                 + Metric::where('recorded_at', '<', $cutoff)->delete();
+
+            // Recompute what the pruned rows had been feeding. uptime_ratio is
+            // derived from the last hundred checks, so deleting checks without
+            // this leaves it frozen as an artifact of whatever the last write
+            // happened to see, and it never moves again on a monitor that has
+            // gone quiet.
+            if ($counts['telemetry_pruned'] > 0) {
+                foreach (Monitor::query()->select(['id', 'uptime_ratio'])->cursor() as $monitor) {
+                    CheckRecorder::refreshUptimeRatio($monitor);
+                }
+            }
         }
 
         // 2. Prune long-resolved incidents (history only; open incidents untouched).
