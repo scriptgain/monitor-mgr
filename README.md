@@ -30,7 +30,8 @@ hovering on the line does not flap an incident open and shut.
 
 **Tell customers before they ask**
 Public status pages with the monitors you choose to expose. Alert contacts get
-notified when something breaks.
+notified when something breaks, escalations chase the ones nobody picks up, and
+a downtime window keeps planned work from paging anyone.
 
 **Run it like production**
 Users and roles, two-factor authentication, an IP firewall with an escape hatch,
@@ -63,10 +64,17 @@ linking a template to anything, and a per-host rule overrides the fleet rule for
 the same metric. A host that stops reporting is its own rule, evaluated by the
 poller, because silence is the one thing an agent cannot report itself.
 
-**What is not here yet:** escalation chains and on-call rotations, downtime
-windows that suppress alerts, host groups and templates, and long term trends.
-Metrics are kept raw for seven days and then deleted, so there is no history
-beyond that yet.
+**Escalation and planned downtime work.** An incident nobody acknowledges climbs
+a ladder of steps: after N minutes, tell this contact as well, optionally
+repeating until someone picks it up. Acknowledging is what stops it, which is
+what makes acknowledging worth doing. A downtime window holds alerts back for a
+monitor, a host, or the whole panel, on a one off schedule or a weekly one that
+can run over midnight. Checks keep running through a window, so the history has
+no hole in it exactly where someone was changing things.
+
+**What is not here yet:** on-call rotations, host groups and templates, and long
+term trends. Metrics are kept raw for seven days and then deleted, so there is
+no history beyond that yet.
 
 ## Install
 

@@ -94,10 +94,13 @@
             // seventh and eighth top-level tab, which is what would start the nav
             // scrolling sideways on a laptop.
             ['type' => 'group', 'label' => 'Alerting', 'icon' => 'bell',
-                'active' => request()->routeIs('alerts.*') || request()->routeIs('triggers.*'),
+                'active' => request()->routeIs('alerts.*') || request()->routeIs('triggers.*')
+                    || request()->routeIs('escalations.*') || request()->routeIs('downtime.*'),
                 'items' => [
                     ['Triggers', route('triggers.index'), 'bolt', request()->routeIs('triggers.*')],
                     ['Alert Contacts', route('alerts.index'), 'bell', request()->routeIs('alerts.*')],
+                    ['Escalations', route('escalations.index'), 'arrow-up', request()->routeIs('escalations.*')],
+                    ['Downtime', route('downtime.index'), 'clock', request()->routeIs('downtime.*')],
                 ]],
         ];
         // If the current route is inside a top-nav group, expose that group's items
@@ -205,6 +208,8 @@
             'status-pages' => ['Status Pages', 'status-pages.index'],
             'alerts' => ['Alert Contacts', 'alerts.index'],
             'triggers' => ['Triggers', 'triggers.index'],
+            'escalations' => ['Escalations', 'escalations.index'],
+            'downtime' => ['Downtime', 'downtime.index'],
             'settings' => ['Settings', 'settings.index'],
         ];
         $crumbs = [];
