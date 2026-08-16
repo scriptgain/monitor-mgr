@@ -8,6 +8,8 @@ use App\Http\Controllers\SetupController;
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\BrandingController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DowntimeController;
+use App\Http\Controllers\EscalationController;
 use App\Http\Controllers\FaviconController;
 use App\Http\Controllers\FirewallController;
 use App\Http\Controllers\HostSslController;
@@ -96,6 +98,12 @@ Route::middleware(['auth', 'security.policy'])->group(function () {
     // Triggers (thresholds over host metrics).
     Route::post('triggers/bulk', [TriggerController::class, 'bulkAction'])->name('triggers.bulk');
     Route::resource('triggers', TriggerController::class)->except(['show']);
+
+    // Escalation ladder for incidents nobody acknowledges.
+    Route::resource('escalations', EscalationController::class)->except(['show'])->parameters(['escalations' => 'escalation']);
+
+    // Planned downtime: suppresses alerts, never collection.
+    Route::resource('downtime', DowntimeController::class)->except(['show'])->parameters(['downtime' => 'downtime']);
 
     // Alert contacts (notification destinations).
     Route::delete('alerts/bulk', [AlertContactController::class, 'bulkDestroy'])->name('alerts.bulk-destroy');

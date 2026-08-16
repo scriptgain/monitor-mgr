@@ -5,6 +5,8 @@ namespace App\Services;
 use App\Mail\IncidentAlert;
 use App\Models\AlertContact;
 use App\Models\AuditLog;
+use App\Models\DowntimeWindow;
+use App\Models\EscalationStep;
 use App\Models\Incident;
 use App\Models\Setting;
 use Illuminate\Support\Collection;
@@ -88,6 +90,43 @@ class AlertDispatcher
         return self::fanOut($incident, 'acknowledged', $title, $body);
     }
 
+    /**
+     * Send one escalation step to its single contact.
+     *
+     * Deliberately not fanOut(): an escalation is aimed at one person who has
+     * not been told yet, and re-notifying the whole original list every rung is
+     * how a ladder turns into a siren.
+     */
+    public static function escalate(Incident $incident, EscalationStep $step): int
+    {
+        if (! $incident->subject() || ! $step->contact) {
+            return 0;
+        }
+        if (DowntimeWindow::activeFor($incident)) {
+            return 0;
+        }
+
+        $mins = (int) ($incident->started_at?->diffInMinutes(now()) ?? 0);
+        $title = '['.config('brand.name')."] STILL OPEN: {$incident->subjectName()}";
+        $body = trim(sprintf(
+            "%s has been open for %d minute(s) with nobody acknowledging it.\n%s\nCause: %s\nSeverity: %s\n%s",
+            $incident->subjectName(),
+            $mins,
+            self::where($incident),
+            $incident->cause ?: 'Unknown',
+            $incident->severityLabel(),
+            self::link($incident),
+        ));
+
+        $ok = self::toContact($step->contact, $incident, 'escalated', $title, $body);
+        AuditLog::record('incident', sprintf(
+            'Escalation "%s" for incident #%d to %s: %s',
+            $step->name, $incident->id, $step->contact->name, $ok ? 'sent' : 'failed'
+        ));
+
+        return $ok ? 1 : 0;
+    }
+
     /** Contacts that should hear about this incident. */
     public static function contactsFor(Incident $incident): Collection
     {
@@ -102,6 +141,19 @@ class AlertDispatcher
     /** @return int the number of destinations that accepted the message */
     private static function fanOut(Incident $incident, string $event, string $title, string $body): int
     {
+        // Planned downtime holds delivery, not collection. The incident is
+        // already open and stays open; this only stops the phone ringing, and it
+        // says so in the audit log so the quiet is explained rather than
+        // mysterious. A resolution still goes out: "it is fixed" is never noise.
+        if ($event !== 'resolved' && $window = DowntimeWindow::activeFor($incident)) {
+            AuditLog::record('incident', sprintf(
+                'Incident %s for %s suppressed by downtime window "%s"',
+                $event, $incident->subjectName(), $window->name
+            ));
+
+            return 0;
+        }
+
         $sent = 0;
 
         foreach (self::contactsFor($incident) as $contact) {

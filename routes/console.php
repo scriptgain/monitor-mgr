@@ -14,6 +14,10 @@ Artisan::command('inspire', function () {
 // AND a running `queue:work`, no check is ever executed.
 Schedule::command('monitor:poll')->everyMinute()->withoutOverlapping();
 
+// Escalation. Open incidents nobody has acknowledged climb the ladder here.
+// Acknowledging, resolving, or an active downtime window all stop it.
+Schedule::command('monitor:escalate')->everyMinute()->withoutOverlapping();
+
 // Housekeeping sweep. The command enforces the configured maintenance window,
 // so it is safe to attempt hourly (installer wires `schedule:run` cron).
 Schedule::command('monitor:maintenance')->hourly()->withoutOverlapping();
