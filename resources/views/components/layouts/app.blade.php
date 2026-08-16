@@ -90,8 +90,15 @@
                 'active' => request()->routeIs('incidents.*')],
             ['type' => 'link', 'label' => 'Status Pages', 'href' => route('status-pages.index'), 'icon' => 'globe',
                 'active' => request()->routeIs('status-pages.*')],
-            ['type' => 'link', 'label' => 'Alerts', 'href' => route('alerts.index'), 'icon' => 'bell',
-                'active' => request()->routeIs('alerts.*')],
+            // Triggers and Alerts collapse into one dropdown rather than becoming a
+            // seventh and eighth top-level tab, which is what would start the nav
+            // scrolling sideways on a laptop.
+            ['type' => 'group', 'label' => 'Alerting', 'icon' => 'bell',
+                'active' => request()->routeIs('alerts.*') || request()->routeIs('triggers.*'),
+                'items' => [
+                    ['Triggers', route('triggers.index'), 'bolt', request()->routeIs('triggers.*')],
+                    ['Alert Contacts', route('alerts.index'), 'bell', request()->routeIs('alerts.*')],
+                ]],
         ];
         // If the current route is inside a top-nav group, expose that group's items
         // so the layout can render a left menu for it (same pattern as settings).
@@ -196,7 +203,8 @@
             'hosts' => ['Hosts', 'hosts.index'],
             'incidents' => ['Incidents', 'incidents.index'],
             'status-pages' => ['Status Pages', 'status-pages.index'],
-            'alerts' => ['Alerts', 'alerts.index'],
+            'alerts' => ['Alert Contacts', 'alerts.index'],
+            'triggers' => ['Triggers', 'triggers.index'],
             'settings' => ['Settings', 'settings.index'],
         ];
         $crumbs = [];

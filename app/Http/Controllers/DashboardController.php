@@ -26,7 +26,7 @@ class DashboardController extends Controller
 
         $downMonitors = Monitor::visibleTo($user)->where('status', 'down')->latest('last_checked_at')->limit(8)->get();
 
-        $recentIncidents = Incident::visibleTo($user)->with('monitor')->latest('started_at')->limit(8)->get();
+        $recentIncidents = Incident::visibleTo($user)->with(['monitor', 'host', 'trigger'])->latest('started_at')->limit(8)->get();
 
         // 14-day check activity for the dashboard chart. Pulled in one query and
         // bucketed per day in PHP so it stays portable across SQLite/MySQL.

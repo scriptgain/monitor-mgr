@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\IncidentController;
 use App\Http\Controllers\Api\MetricController;
 use App\Http\Controllers\Api\MonitorController;
 use App\Http\Controllers\Api\StatusPageController;
+use App\Http\Controllers\Api\TriggerController;
 use App\Http\Controllers\Api\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -27,6 +28,7 @@ Route::prefix('v1')->name('api.')->middleware('api.token')->group(function () {
     // through the same recorder as the poller, incidents and alerts included.
     Route::apiResource('checks', CheckController::class)->only(['index', 'show', 'store']);
     Route::apiResource('metrics', MetricController::class)->only(['index', 'show']);
+    Route::apiResource('triggers', TriggerController::class);
     Route::apiResource('alert-contacts', AlertContactController::class)->parameters(['alert-contacts' => 'alertContact']);
     Route::apiResource('status-pages', StatusPageController::class);
 

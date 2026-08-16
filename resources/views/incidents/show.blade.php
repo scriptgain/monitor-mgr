@@ -1,6 +1,6 @@
 <x-layouts.app :title="'Incident #' . $incident->id">
     <x-page-header :title="'Incident #' . $incident->id" icon="warning"
-        :subtitle="optional($incident->monitor)->name ?? 'Unknown monitor'"
+        :subtitle="$incident->subjectName() . ' · ' . $incident->severityLabel()"
         :back="['href' => route('incidents.index'), 'label' => 'Incidents']">
         <x-slot:actions>
             @if ($incident->isOpen())
@@ -22,7 +22,17 @@
         <div class="lg:col-span-2 space-y-6">
             <x-card title="Details">
                 <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
-                    <div><dt class="text-slate-500">Monitor</dt><dd class="text-slate-900">@if($incident->monitor)<a href="{{ route('monitors.show', $incident->monitor) }}" class="text-brand-700 hover:underline">{{ $incident->monitor->name }}</a>@else — @endif</dd></div>
+                    <div><dt class="text-slate-500">{{ $incident->monitor_id ? 'Monitor' : 'Host' }}</dt><dd class="text-slate-900">
+                        @if ($incident->subjectRoute())
+                            <a href="{{ $incident->subjectRoute() }}" class="text-brand-700 hover:underline">{{ $incident->subjectName() }}</a>
+                        @else
+                            {{ $incident->subjectName() }}
+                        @endif
+                    </dd></div>
+                    <div><dt class="text-slate-500">Severity</dt><dd><x-badge :color="$incident->severityColor()">{{ $incident->severityLabel() }}</x-badge></dd></div>
+                    @if ($incident->trigger)
+                        <div><dt class="text-slate-500">Trigger</dt><dd class="text-slate-900"><a href="{{ route('triggers.edit', $incident->trigger) }}" class="text-brand-700 hover:underline">{{ $incident->trigger->name }}</a> <span class="text-slate-500">({{ $incident->trigger->condition() }})</span></dd></div>
+                    @endif
                     <div><dt class="text-slate-500">Status</dt><dd>@if ($incident->isOpen())<x-badge color="danger" dot>Open</x-badge>@else<x-badge color="success">Resolved</x-badge>@endif</dd></div>
                     <div><dt class="text-slate-500">Started</dt><dd class="text-slate-900">{{ $incident->started_at->format('M j, Y g:i:s A') }}</dd></div>
                     <div><dt class="text-slate-500">Resolved</dt><dd class="text-slate-900">{{ $incident->resolved_at ? $incident->resolved_at->format('M j, Y g:i:s A') : '—' }}</dd></div>

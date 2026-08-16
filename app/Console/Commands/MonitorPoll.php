@@ -7,6 +7,7 @@ use App\Checks\CheckRunner;
 use App\Jobs\RunMonitorCheck;
 use App\Models\Monitor;
 use App\Services\CheckRecorder;
+use App\Services\TriggerEvaluator;
 use Illuminate\Console\Command;
 
 /**
@@ -29,8 +30,10 @@ class MonitorPoll extends Command
     {
         $queued = $this->pollDue();
         $missed = $this->sweepHeartbeats();
+        // Silence is the one condition agent ingest can never report on itself.
+        $offline = TriggerEvaluator::sweepOffline();
 
-        $this->info("Polled {$queued} monitor(s); {$missed} heartbeat(s) missed.");
+        $this->info("Polled {$queued} monitor(s); {$missed} heartbeat(s) missed; {$offline} host(s) went offline.");
 
         return self::SUCCESS;
     }

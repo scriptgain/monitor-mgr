@@ -28,16 +28,22 @@ class AlertDispatcher
 {
     public static function incidentOpened(Incident $incident): int
     {
-        $monitor = $incident->monitor;
-        if (! $monitor) {
+        $subject = $incident->subject();
+        if (! $subject) {
             return 0;
         }
 
-        $title = '['.config('brand.name')."] DOWN: {$monitor->name}";
+        // A failed check reads DOWN; a breached threshold reads PROBLEM, because
+        // a host at 91% memory is not down and saying so would train people to
+        // ignore the word.
+        $word = $incident->monitor_id ? 'DOWN' : strtoupper($incident->severityLabel());
+        $title = '['.config('brand.name')."] {$word}: {$incident->subjectName()}";
         $body = trim(sprintf(
-            "%s is down.\nTarget: %s\nCause: %s\nStarted: %s\n%s",
-            $monitor->name,
-            $monitor->target,
+            "%s\n%s\nCause: %s\nStarted: %s\n%s",
+            $incident->monitor_id
+                ? $incident->subjectName().' is down.'
+                : $incident->subjectName().' breached "'.($incident->trigger?->name ?: 'a threshold').'".',
+            self::where($incident),
             $incident->cause ?: 'Check failed',
             $incident->started_at?->toDayDateTimeString() ?? now()->toDayDateTimeString(),
             self::link($incident),
@@ -48,16 +54,15 @@ class AlertDispatcher
 
     public static function incidentResolved(Incident $incident): int
     {
-        $monitor = $incident->monitor;
-        if (! $monitor) {
+        if (! $incident->subject()) {
             return 0;
         }
 
-        $title = '['.config('brand.name')."] RECOVERED: {$monitor->name}";
+        $title = '['.config('brand.name')."] RECOVERED: {$incident->subjectName()}";
         $body = trim(sprintf(
-            "%s is back up.\nTarget: %s\nDown for: %s\n%s",
-            $monitor->name,
-            $monitor->target,
+            "%s is back to normal.\n%s\nProblem lasted: %s\n%s",
+            $incident->subjectName(),
+            self::where($incident),
             self::humanDuration((int) $incident->duration_seconds),
             self::link($incident),
         ));
@@ -67,16 +72,15 @@ class AlertDispatcher
 
     public static function incidentAcknowledged(Incident $incident): int
     {
-        $monitor = $incident->monitor;
-        if (! $monitor) {
+        if (! $incident->subject()) {
             return 0;
         }
 
         $who = auth()->user()?->name ?: 'someone';
-        $title = '['.config('brand.name')."] ACKNOWLEDGED: {$monitor->name}";
+        $title = '['.config('brand.name')."] ACKNOWLEDGED: {$incident->subjectName()}";
         $body = trim(sprintf(
             "The open incident on %s was acknowledged by %s.\n%s",
-            $monitor->name,
+            $incident->subjectName(),
             $who,
             self::link($incident),
         ));
@@ -87,7 +91,7 @@ class AlertDispatcher
     /** Contacts that should hear about this incident. */
     public static function contactsFor(Incident $incident): Collection
     {
-        $ownerId = $incident->monitor?->user_id;
+        $ownerId = $incident->subject()?->user_id;
 
         return AlertContact::query()
             ->where('is_enabled', true)
@@ -116,7 +120,7 @@ class AlertDispatcher
 
         AuditLog::record('incident', sprintf(
             'Incident %s for monitor %s: %d notification(s) sent',
-            $event, $incident->monitor?->name ?? '#'.$incident->monitor_id, $sent
+            $event, $incident->subjectName(), $sent
         ));
 
         return $sent;
@@ -183,11 +187,13 @@ class AlertDispatcher
     private static function payload(Incident $incident, string $event): array
     {
         $monitor = $incident->monitor;
+        $host = $incident->host;
 
         return [
             'event' => "incident.{$event}",
             'incident' => [
                 'id' => $incident->id,
+                'severity' => $incident->severity,
                 'started_at' => $incident->started_at?->toIso8601String(),
                 'resolved_at' => $incident->resolved_at?->toIso8601String(),
                 'acknowledged_at' => $incident->acknowledged_at?->toIso8601String(),
@@ -201,7 +207,33 @@ class AlertDispatcher
                 'target' => $monitor->target,
                 'status' => $monitor->status,
             ] : null,
+            'host' => $host ? [
+                'id' => $host->id,
+                'name' => $host->name,
+                'hostname' => $host->hostname,
+                'status' => $host->effective_status,
+            ] : null,
+            'trigger' => $incident->trigger ? [
+                'id' => $incident->trigger->id,
+                'name' => $incident->trigger->name,
+                'metric' => $incident->trigger->metric,
+                'operator' => $incident->trigger->operator,
+                'threshold' => $incident->trigger->threshold,
+            ] : null,
         ];
+    }
+
+    /** One line naming what the incident is about, whichever kind it is. */
+    private static function where(Incident $incident): string
+    {
+        if ($monitor = $incident->monitor) {
+            return 'Target: '.$monitor->target.($monitor->port ? ':'.$monitor->port : '');
+        }
+        if ($host = $incident->host) {
+            return 'Host: '.($host->hostname ?: $host->name);
+        }
+
+        return '';
     }
 
     private static function link(Incident $incident): string

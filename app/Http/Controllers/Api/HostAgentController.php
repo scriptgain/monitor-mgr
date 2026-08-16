@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\HostMetric;
 use App\Models\MonitoredHost;
+use App\Services\TriggerEvaluator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
@@ -105,6 +106,11 @@ class HostAgentController extends Controller
         ])->save();
 
         $this->prune($host);
+
+        // The sample is stored, so now it can be judged. Any incident this opens
+        // or closes, and any alert that goes out, happens on this request: the
+        // agent is the only thing that knows a new value exists.
+        TriggerEvaluator::forHost($host);
 
         $interval = (int) (\App\Models\Setting::get('host_agent_interval') ?: 0);
 

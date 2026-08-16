@@ -22,9 +22,11 @@ A failing monitor opens an incident with a timeline. Acknowledge it so the team
 knows it is being handled, then resolve it. History is kept, so "how often does
 this break" has an answer.
 
-**Collect server metrics**
+**Collect server metrics, and act on them**
 Agents report CPU, memory, disk, and load per host, so a slow server is visible
-before it is a dead one.
+before it is a dead one. Triggers put thresholds on those numbers: a rule holds
+for a set time before it fires, and has its own recovery value so a metric
+hovering on the line does not flap an incident open and shut.
 
 **Tell customers before they ask**
 Public status pages with the monitors you choose to expose. Alert contacts get
@@ -53,10 +55,18 @@ so monitored hosts need no inbound firewall rule. Heartbeat monitors are pinged 
 your own cron at a URL the panel gives you, and an external checker can post its
 own results to `POST /api/v1/checks`.
 
-**What is not here yet:** threshold rules on server metrics. An agent reporting
-100% disk records the number but does not open an incident, and an agent that
-stops reporting reads as offline in the UI without alerting. Alerting today is
-driven by check results, not by metric values.
+**Thresholds on server metrics work too.** A trigger is a rule such as "disk
+above 90% for ten minutes". Breaching one opens an incident at the severity you
+gave it and alerts your contacts; coming back past the recovery value closes it.
+Rules apply to every host by default, so a fresh install is useful without
+linking a template to anything, and a per-host rule overrides the fleet rule for
+the same metric. A host that stops reporting is its own rule, evaluated by the
+poller, because silence is the one thing an agent cannot report itself.
+
+**What is not here yet:** escalation chains and on-call rotations, downtime
+windows that suppress alerts, host groups and templates, and long term trends.
+Metrics are kept raw for seven days and then deleted, so there is no history
+beyond that yet.
 
 ## Install
 

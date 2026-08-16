@@ -1,5 +1,5 @@
 <x-layouts.app title="Incidents">
-    <x-page-header title="Incidents" icon="warning" subtitle="Downtime history across every monitor." />
+    <x-page-header title="Incidents" icon="warning" subtitle="Every problem the panel has opened, from a failed check or a breached threshold." />
 
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         <x-stat label="Open" :value="$stats['open']" icon="warning" />
@@ -15,7 +15,7 @@
 
     @if ($incidents->isEmpty())
         <x-card>
-            <x-empty-state icon="warning" title="No Incidents" description="Downtime events will show up here as monitors report failures." />
+            <x-empty-state icon="warning" title="No Incidents" description="Problems show up here when a check fails or a host metric breaches a trigger." />
         </x-card>
     @else
         <div
@@ -69,7 +69,7 @@
                                     class="inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform"></span>
                             </button>
                         </th>
-                        <th>Monitor</th><th>Started</th><th>Resolved</th><th>Duration</th><th>Cause</th><th>Status</th><th class="text-right">Actions</th>
+                        <th>Subject</th><th>Severity</th><th>Started</th><th>Resolved</th><th>Duration</th><th>Cause</th><th>Status</th><th class="text-right">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -86,7 +86,15 @@
                                         class="inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform"></span>
                                 </button>
                             </td>
-                            <td><a href="{{ route('monitors.show', $i->monitor) }}" class="text-brand-700 hover:underline font-medium">{{ optional($i->monitor)->name ?? 'Unknown' }}</a></td>
+                            <td>
+                                @if ($i->subjectRoute())
+                                    <a href="{{ $i->subjectRoute() }}" class="text-brand-700 hover:underline font-medium">{{ $i->subjectName() }}</a>
+                                @else
+                                    <span class="font-medium text-slate-500">{{ $i->subjectName() }}</span>
+                                @endif
+                                @if ($i->trigger)<div class="text-xs text-slate-400">{{ $i->trigger->name }}</div>@endif
+                            </td>
+                            <td><x-badge :color="$i->severityColor()">{{ $i->severityLabel() }}</x-badge></td>
                             <td class="text-slate-500">{{ $i->started_at->format('M j, Y g:i A') }}</td>
                             <td class="text-slate-500">{{ $i->resolved_at ? $i->resolved_at->format('M j, Y g:i A') : '—' }}</td>
                             <td class="tabular text-slate-500">{{ $i->duration_seconds ? gmdate('H:i:s', $i->duration_seconds) : ($i->isOpen() ? 'Ongoing' : '—') }}</td>
