@@ -2,11 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Checks\CheckResult;
+use App\Checks\CheckRunner;
 use App\Http\Controllers\Concerns\ManagesOwners;
 use App\Models\AuditLog;
-use App\Models\Incident;
 use App\Models\Monitor;
-use App\Models\User;
+use App\Services\CheckRecorder;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -58,8 +59,9 @@ class MonitorController extends Controller
         $openIncident = $monitor->openIncident();
         $incidents = $monitor->incidents()->latest('started_at')->limit(10)->get();
         $latestMetric = $monitor->isAgentType() ? $monitor->metrics()->latest('recorded_at')->first() : null;
+        $isPolled = CheckRunner::isPolled((string) $monitor->type);
 
-        return view('monitors.show', compact('monitor', 'checks', 'openIncident', 'incidents', 'latestMetric'));
+        return view('monitors.show', compact('monitor', 'checks', 'openIncident', 'incidents', 'latestMetric', 'isPolled'));
     }
 
     public function edit(Monitor $monitor)
@@ -122,9 +124,9 @@ class MonitorController extends Controller
     }
 
     /**
-     * Demo/manual way to record a check against a monitor. In production this
-     * would be posted by an external checker process or the install agent;
-     * this endpoint lets an admin simulate one from the monitor's show page.
+     * Record a check by hand from the monitor page. The poller and the REST API
+     * are the usual writers now; this stays as the way to force a state for a
+     * demo or to close out a monitor the poller cannot reach.
      */
     public function storeCheck(Request $request, Monitor $monitor)
     {
@@ -136,43 +138,33 @@ class MonitorController extends Controller
             'message' => ['nullable', 'string', 'max:255'],
         ]);
 
-        $check = $monitor->checks()->create([
-            'checked_at' => now(),
-            'status' => $data['status'],
-            'response_time_ms' => $data['response_time_ms'] ?? null,
-            'status_code' => $data['status_code'] ?? null,
-            'message' => $data['message'] ?? null,
-        ]);
+        $result = $data['status'] === 'up'
+            ? CheckResult::up($data['response_time_ms'] ?? null, $data['status_code'] ?? null, $data['message'] ?? null)
+            : CheckResult::down($data['message'] ?? 'Check failed', $data['response_time_ms'] ?? null, $data['status_code'] ?? null);
 
-        $wasDown = $monitor->status === 'down';
-        $monitor->last_checked_at = $check->checked_at;
-        $monitor->status = $data['status'];
-
-        // Recompute a simple uptime ratio from recent check history.
-        $recent = $monitor->checks()->latest('checked_at')->limit(100)->get();
-        $monitor->uptime_ratio = $recent->count()
-            ? round($recent->where('status', 'up')->count() / $recent->count() * 100, 2)
-            : 100;
-        $monitor->save();
-
-        if ($data['status'] === 'down' && ! $wasDown) {
-            Incident::create([
-                'monitor_id' => $monitor->id,
-                'started_at' => now(),
-                'cause' => $data['message'] ?? 'Check failed',
-            ]);
-            AuditLog::record('incident', "Incident opened for monitor {$monitor->name}");
-        } elseif ($data['status'] === 'up' && $wasDown) {
-            if ($open = $monitor->openIncident()) {
-                $open->update([
-                    'resolved_at' => now(),
-                    'duration_seconds' => now()->diffInSeconds($open->started_at),
-                ]);
-                AuditLog::record('incident', "Incident resolved for monitor {$monitor->name}");
-            }
-        }
+        CheckRecorder::record($monitor, $result);
 
         return back()->with('status', 'Check recorded.');
+    }
+
+    /** Run this monitor's check right now, without waiting for the sweep. */
+    public function runCheck(Monitor $monitor)
+    {
+        $this->guard($monitor);
+
+        if (! CheckRunner::isPolled((string) $monitor->type)) {
+            return back()->with('status', "{$monitor->typeLabel()} monitors are not polled by the panel.");
+        }
+
+        $result = CheckRunner::run($monitor);
+        CheckRecorder::record($monitor, $result);
+        AuditLog::record('monitor', "Ran check on demand for monitor {$monitor->name}");
+
+        $summary = $result->conclusive
+            ? strtoupper($result->status).($result->message ? ': '.$result->message : '')
+            : 'Could not run: '.$result->message;
+
+        return back()->with('status', "Check complete. {$summary}");
     }
 
     private function guard(Monitor $monitor): void

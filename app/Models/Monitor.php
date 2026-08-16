@@ -6,6 +6,7 @@ use App\Models\Concerns\OwnedByUser;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
 class Monitor extends Model
 {
@@ -78,6 +79,42 @@ class Monitor extends Model
     public function isAgentType(): bool
     {
         return $this->type === 'agent';
+    }
+
+    public function isHeartbeatType(): bool
+    {
+        return $this->type === 'heartbeat';
+    }
+
+    /**
+     * The token in this monitor's ping URL, minted on first use.
+     *
+     * Lazy rather than minted at creation so monitors that predate the column,
+     * and monitors switched to heartbeat after the fact, both get one without a
+     * backfill migration.
+     */
+    public function heartbeatToken(): string
+    {
+        if (! $this->heartbeat_token) {
+            $this->forceFill(['heartbeat_token' => Str::random(40)])->save();
+        }
+
+        return (string) $this->heartbeat_token;
+    }
+
+    /** The URL an external cron job pings to say "I ran". */
+    public function heartbeatUrl(): string
+    {
+        return url('/api/hb/'.$this->heartbeatToken());
+    }
+
+    /**
+     * Seconds of silence after which a heartbeat monitor counts as missed. The
+     * grace period stops a job that runs a few seconds late from paging anyone.
+     */
+    public function heartbeatDeadline(): int
+    {
+        return max(30, (int) $this->interval_seconds) + max(0, (int) config('monitor.poll.heartbeat_grace_seconds', 60));
     }
 
     /** The currently open (unresolved) incident, if any. */
