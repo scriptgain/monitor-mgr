@@ -19,6 +19,7 @@ use App\Http\Controllers\MonitorController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PasswordController;
 use App\Http\Controllers\StatusPageController;
+use App\Http\Controllers\TriggerController;
 use App\Http\Controllers\TwoFactorController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
@@ -91,6 +92,10 @@ Route::middleware(['auth', 'security.policy'])->group(function () {
     // Public status pages (composed from monitors).
     Route::delete('status-pages/bulk', [StatusPageController::class, 'bulkDestroy'])->name('status-pages.bulk-destroy');
     Route::resource('status-pages', StatusPageController::class)->parameters(['status-pages' => 'statusPage']);
+
+    // Triggers (thresholds over host metrics).
+    Route::post('triggers/bulk', [TriggerController::class, 'bulkAction'])->name('triggers.bulk');
+    Route::resource('triggers', TriggerController::class)->except(['show']);
 
     // Alert contacts (notification destinations).
     Route::delete('alerts/bulk', [AlertContactController::class, 'bulkDestroy'])->name('alerts.bulk-destroy');

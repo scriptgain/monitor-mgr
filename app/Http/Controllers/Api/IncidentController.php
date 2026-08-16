@@ -12,7 +12,7 @@ class IncidentController extends Controller
     public function index(Request $request)
     {
         return Incident::visibleTo($request->user())
-            ->with('monitor:id,name')
+            ->with(['monitor:id,name', 'host:id,name', 'trigger:id,name,metric'])
             ->when($request->integer('monitor_id'), fn ($q, $id) => $q->where('monitor_id', $id))
             ->latest('started_at')
             ->paginate(50);
@@ -22,7 +22,7 @@ class IncidentController extends Controller
     {
         abort_unless($incident->isVisibleTo(auth()->user()), 403);
 
-        return $incident->load('monitor:id,name');
+        return $incident->load(['monitor:id,name', 'host:id,name', 'trigger:id,name,metric']);
     }
 
     public function acknowledge(Incident $incident)
@@ -31,7 +31,7 @@ class IncidentController extends Controller
 
         if (! $incident->acknowledged_at) {
             $incident->update(['acknowledged_at' => now()]);
-            AlertDispatcher::incidentAcknowledged($incident->load('monitor'));
+            AlertDispatcher::incidentAcknowledged($incident->load(['monitor', 'host', 'trigger']));
         }
 
         return $incident->fresh();
@@ -49,7 +49,7 @@ class IncidentController extends Controller
             if ($incident->monitor && $incident->monitor->status === 'down') {
                 $incident->monitor->update(['status' => 'up']);
             }
-            AlertDispatcher::incidentResolved($incident->load('monitor'));
+            AlertDispatcher::incidentResolved($incident->load(['monitor', 'host', 'trigger']));
         }
 
         return $incident->fresh();

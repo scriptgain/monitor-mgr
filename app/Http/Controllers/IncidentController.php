@@ -13,7 +13,7 @@ class IncidentController extends Controller
     {
         $user = auth()->user();
         $status = $request->query('status');
-        $query = Incident::visibleTo($user)->with('monitor');
+        $query = Incident::visibleTo($user)->with(['monitor', 'host', 'trigger']);
         if ($status === 'open') {
             $query->whereNull('resolved_at');
         } elseif ($status === 'resolved') {
@@ -33,7 +33,7 @@ class IncidentController extends Controller
     public function show(Incident $incident)
     {
         $this->guard($incident);
-        $incident->load('monitor');
+        $incident->load(['monitor', 'host', 'trigger']);
 
         return view('incidents.show', compact('incident'));
     }
@@ -47,7 +47,7 @@ class IncidentController extends Controller
 
         // Tell the other contacts someone has picked it up, once.
         if (! $alreadyAcknowledged) {
-            AlertDispatcher::incidentAcknowledged($incident->load('monitor'));
+            AlertDispatcher::incidentAcknowledged($incident->load(['monitor', 'host', 'trigger']));
         }
 
         return back()->with('status', 'Incident acknowledged.');
@@ -65,7 +65,7 @@ class IncidentController extends Controller
                 $incident->monitor->update(['status' => 'up']);
             }
             AuditLog::record('incident', "Resolved incident #{$incident->id}");
-            AlertDispatcher::incidentResolved($incident->load('monitor'));
+            AlertDispatcher::incidentResolved($incident->load(['monitor', 'host', 'trigger']));
         }
 
         return back()->with('status', 'Incident resolved.');
