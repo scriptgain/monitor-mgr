@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AgentDownloadController;
 use App\Http\Controllers\AlertContactController;
 use App\Http\Controllers\ApiTokenController;
 use App\Http\Controllers\Auth\AuthController;
@@ -54,6 +55,11 @@ Route::get('/status/{slug}', [StatusPageController::class, 'publicShow'])->name(
 
 // Documentation (public — reachable from the in-app help icon).
 Route::view('/docs', 'docs')->name('docs');
+
+// Agent distribution (public). curl on a brand-new host has no session, so the
+// install one-liner in "Add Host" and the docs page both resolve here.
+Route::get('/downloads/agent-install.sh', [AgentDownloadController::class, 'script'])->name('downloads.agent-install');
+Route::get('/downloads/monitor-agent', [AgentDownloadController::class, 'binary'])->name('downloads.agent');
 
 // Authenticated control panel.
 Route::middleware(['auth', 'security.policy'])->group(function () {

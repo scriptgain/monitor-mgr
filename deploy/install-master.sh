@@ -1,22 +1,26 @@
 #!/usr/bin/env bash
 #
-# Backup Manager installer — provisions the control plane on a fresh
-# Debian/Ubuntu server: PHP, MariaDB, nginx, Composer, the app, .env, database
-# migration, queue worker + scheduler, and (optionally) a Let's Encrypt cert.
+# MonitorMGR installer. Provisions the control panel on a fresh Debian/Ubuntu
+# server: PHP, MariaDB, nginx, Composer, the app, .env, database migration,
+# queue worker + scheduler, and (optionally) a Let's Encrypt certificate.
 #
 # Usage (run as root from the repo root, or clone first):
-#   DOMAIN=backup.example.com ./deploy/install-master.sh
-#   DOMAIN=backup.example.com SSL=1 EMAIL=you@example.com ./deploy/install-master.sh
+#   DOMAIN=monitor.example.com ./deploy/install-master.sh
+#   DOMAIN=monitor.example.com SSL=1 EMAIL=you@example.com ./deploy/install-master.sh
+#
+# The hosted one-liner at install.scriptgain.com wraps this same script. The
+# first admin account is created by the /setup wizard on first visit, so this
+# installer never creates a user.
 #
 # Idempotent: safe to re-run. Tested targets: Ubuntu 22.04/24.04, Debian 12.
 set -euo pipefail
 
 # ---- config (override via env) ----
-APP_DIR="${APP_DIR:-/var/www/backup}"
+APP_DIR="${APP_DIR:-/var/www/monitor}"
 DOMAIN="${DOMAIN:-}"
 PHP_VER="${PHP_VER:-8.3}"
-DB_NAME="${DB_NAME:-backupdb}"
-DB_USER="${DB_USER:-backup}"
+DB_NAME="${DB_NAME:-monitormgr_db}"
+DB_USER="${DB_USER:-monitor}"
 SSL="${SSL:-0}"
 EMAIL="${EMAIL:-}"
 SRC_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -30,7 +34,7 @@ log() { printf '\n\033[1;36m==> %s\033[0m\n' "$*"; }
 log "Installing packages"
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -y
-apt-get install -y software-properties-common ca-certificates curl unzip git gnupg
+apt-get install -y software-properties-common ca-certificates curl unzip git gnupg rsync
 # ondrej PPA gives modern PHP on Ubuntu; Debian ships recent PHP already.
 if grep -qi ubuntu /etc/os-release; then
   add-apt-repository -y ppa:ondrej/php
@@ -67,7 +71,7 @@ if [ ! -f .env ]; then
   cp .env.example .env 2>/dev/null || touch .env
 fi
 set_env() { grep -q "^$1=" .env && sed -i "s|^$1=.*|$1=$2|" .env || echo "$1=$2" >> .env; }
-set_env APP_NAME Backup
+set_env APP_NAME MonitorMGR
 set_env APP_ENV production
 set_env APP_DEBUG false
 set_env APP_URL "https://${DOMAIN}"
@@ -82,9 +86,8 @@ set_env QUEUE_CONNECTION database
 set_env CACHE_STORE database
 grep -q "^APP_KEY=base64" .env || "php${PHP_VER}" artisan key:generate --force
 
-log "Migrating + bootstrapping"
+log "Migrating"
 "php${PHP_VER}" artisan migrate --force
-"php${PHP_VER}" artisan backup:bootstrap
 "php${PHP_VER}" artisan config:cache
 "php${PHP_VER}" artisan route:cache
 
@@ -93,13 +96,14 @@ chown -R www-data:www-data "$APP_DIR"
 find "$APP_DIR/storage" "$APP_DIR/bootstrap/cache" -type d -exec chmod 775 {} \;
 
 log "Configuring nginx"
-cat > "/etc/nginx/sites-available/backup.conf" <<NGINX
+cat > "/etc/nginx/sites-available/monitor.conf" <<NGINX
 server {
     listen 80;
     server_name ${DOMAIN};
     root ${APP_DIR}/public;
     index index.php;
     charset utf-8;
+    client_max_body_size 32m;
     location / { try_files \$uri \$uri/ /index.php?\$query_string; }
     location ~ \.php\$ {
         fastcgi_pass unix:/run/php/php${PHP_VER}-fpm.sock;
@@ -109,17 +113,16 @@ server {
     location ~ /\.(?!well-known).* { deny all; }
 }
 NGINX
-ln -sf /etc/nginx/sites-available/backup.conf /etc/nginx/sites-enabled/backup.conf
+ln -sf /etc/nginx/sites-available/monitor.conf /etc/nginx/sites-enabled/monitor.conf
 nginx -t && systemctl reload nginx
 
 log "Scheduler + queue worker"
-# Scheduler via cron.
 ( crontab -l 2>/dev/null | grep -v 'artisan schedule:run' ; \
   echo "* * * * * cd ${APP_DIR} && php${PHP_VER} artisan schedule:run >> /dev/null 2>&1" ) | crontab -
 # Queue worker via systemd.
-cat > /etc/systemd/system/backup-queue.service <<UNIT
+cat > /etc/systemd/system/monitor-queue.service <<UNIT
 [Unit]
-Description=Backup queue worker
+Description=MonitorMGR queue worker
 After=network.target mariadb.service
 
 [Service]
@@ -131,15 +134,15 @@ ExecStart=/usr/bin/php${PHP_VER} ${APP_DIR}/artisan queue:work --sleep=3 --tries
 WantedBy=multi-user.target
 UNIT
 systemctl daemon-reload
-systemctl enable --now backup-queue
+systemctl enable --now monitor-queue
 
 if [ "$SSL" = "1" ]; then
   log "Issuing Let's Encrypt certificate"
   apt-get install -y certbot python3-certbot-nginx
-  certbot --nginx -d "$DOMAIN" --non-interactive --agree-tos ${EMAIL:+-m "$EMAIL"} ${EMAIL:+} || echo "certbot failed; run it manually."
+  certbot --nginx -d "$DOMAIN" --non-interactive --agree-tos ${EMAIL:+-m "$EMAIL"} || echo "certbot failed; run it manually."
 fi
 
 log "Done"
-echo "Backup Manager installed at https://${DOMAIN}"
-echo "DB password + admin token are in ${APP_DIR}/.env and storage/app/private/bootstrap-token.txt"
-echo "Create your admin user:  cd ${APP_DIR} && php${PHP_VER} artisan tinker  (User::create([...]))"
+echo "MonitorMGR installed at https://${DOMAIN}"
+echo "Open it in a browser: the /setup wizard creates the first admin account."
+echo "Database credentials are in ${APP_DIR}/.env"

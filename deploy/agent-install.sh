@@ -1,40 +1,43 @@
 #!/usr/bin/env bash
 #
-# Backup agent installer. Run on the host you want to back up:
+# MonitorMGR agent installer. Run on the host you want to monitor:
 #
 #   curl -fsSL https://MASTER/downloads/agent-install.sh | sudo bash -s -- https://MASTER <enroll-token>
 #
-# Downloads the agent + bundled kopia from the Manager, enrolls this host, and
-# installs a systemd service that polls for backup jobs. Linux x86_64.
+# Downloads the agent from the panel, trades the one-time enrollment token for a
+# permanent agent key, and installs a systemd service that samples the host and
+# pushes metrics outbound over HTTPS. The agent never listens on a port, so the
+# monitored host needs no inbound firewall rule. Linux x86_64.
 set -euo pipefail
 
 MASTER="${1:?usage: agent-install.sh <master-url> <enroll-token>}"
 TOKEN="${2:?usage: agent-install.sh <master-url> <enroll-token>}"
 MASTER="${MASTER%/}"
-DEST="${BACKUP_DIR:-/opt/backup}"
-CFG="/etc/backup/agent.json"
+DEST="${MONITOR_AGENT_DIR:-/opt/monitor-agent}"
+CFG="/etc/monitor-agent/agent.json"
 
 [ "$(id -u)" -eq 0 ] || { echo "Run as root (sudo)."; exit 1; }
 command -v curl >/dev/null || { echo "curl is required."; exit 1; }
 
-echo "==> Downloading agent + kopia from ${MASTER}/downloads"
-mkdir -p "$DEST" /etc/backup
-curl -fsSL "${MASTER}/downloads/agent" -o "$DEST/agent"
-curl -fsSL "${MASTER}/downloads/kopia" -o "$DEST/kopia"
-chmod +x "$DEST/agent" "$DEST/kopia"
+echo "==> Downloading the agent from ${MASTER}/downloads"
+mkdir -p "$DEST" /etc/monitor-agent
+curl -fsSL "${MASTER}/downloads/monitor-agent" -o "$DEST/monitor-agent.new"
+chmod +x "$DEST/monitor-agent.new"
+mv -f "$DEST/monitor-agent.new" "$DEST/monitor-agent"
 
-echo "==> Enrolling with the Manager"
-"$DEST/agent" enroll -master "$MASTER" -token "$TOKEN" -config "$CFG"
+echo "==> Enrolling with the panel"
+"$DEST/monitor-agent" enroll -master "$MASTER" -token "$TOKEN" -config "$CFG"
+chmod 600 "$CFG"
 
 echo "==> Installing systemd service"
-cat > /etc/systemd/system/backup-agent.service <<UNIT
+cat > /etc/systemd/system/monitor-agent.service <<UNIT
 [Unit]
-Description=Backup backup agent
+Description=MonitorMGR host agent
 After=network-online.target
 Wants=network-online.target
 
 [Service]
-ExecStart=${DEST}/agent run -config ${CFG}
+ExecStart=${DEST}/monitor-agent run -config ${CFG}
 Restart=always
 RestartSec=5
 User=root
@@ -44,5 +47,5 @@ WantedBy=multi-user.target
 UNIT
 
 systemctl daemon-reload
-systemctl enable --now backup-agent
-echo "==> Done. The agent is enrolled and running (systemctl status backup-agent)."
+systemctl enable --now monitor-agent
+echo "==> Done. The agent is enrolled and reporting (systemctl status monitor-agent)."
