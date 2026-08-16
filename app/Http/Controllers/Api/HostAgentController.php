@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\HostMetric;
 use App\Models\MonitoredHost;
+use App\Models\Setting;
 use App\Services\TriggerEvaluator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -105,27 +106,22 @@ class HostAgentController extends Controller
                 ? Carbon::createFromTimestamp($data['boot_time']) : $host->boot_time,
         ])->save();
 
-        $this->prune($host);
-
         // The sample is stored, so now it can be judged. Any incident this opens
         // or closes, and any alert that goes out, happens on this request: the
         // agent is the only thing that knows a new value exists.
         TriggerEvaluator::forHost($host);
 
-        $interval = (int) (\App\Models\Setting::get('host_agent_interval') ?: 0);
+        $interval = (int) (Setting::get('host_agent_interval') ?: 0);
 
         return response()->json(['interval_seconds' => $interval > 0 ? $interval : null]);
     }
 
-    /**
-     * Keep the time series bounded: drop samples older than the retention window
-     * so history never grows without limit. Runs cheaply on every ingest.
+    /*
+     * Retention used to live here, as a DELETE per host on every ingest. It is
+     * now part of the scheduled maintenance sweep instead, for two reasons: a
+     * delete every thirty seconds per host is not free, and pruning only on
+     * ingest meant a host that stopped reporting was never pruned at all. See
+     * MaintenanceController::pruneRawMetrics, which also refuses to delete
+     * anything monitor:rollup has not aggregated yet.
      */
-    private function prune(MonitoredHost $host): void
-    {
-        $days = max(1, (int) config('monitor.metrics_retention_days', 7));
-        HostMetric::where('monitored_host_id', $host->id)
-            ->where('captured_at', '<', now()->subDays($days))
-            ->delete();
-    }
 }

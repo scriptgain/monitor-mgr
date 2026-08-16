@@ -14,6 +14,11 @@ Artisan::command('inspire', function () {
 // AND a running `queue:work`, no check is ever executed.
 Schedule::command('monitor:poll')->everyMinute()->withoutOverlapping();
 
+// Aggregate raw agent samples into hourly and daily buckets. This is what lets
+// history outlive the raw retention window, and the maintenance sweep refuses to
+// prune anything this has not written yet, so a missed run costs disk, not data.
+Schedule::command('monitor:rollup')->hourly()->withoutOverlapping();
+
 // Escalation. Open incidents nobody has acknowledged climb the ladder here.
 // Acknowledging, resolving, or an active downtime window all stop it.
 Schedule::command('monitor:escalate')->everyMinute()->withoutOverlapping();

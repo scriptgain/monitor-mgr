@@ -55,6 +55,29 @@
                         </div>
 
                         <div class="border-t border-slate-100 pt-5">
+                            <p class="text-sm font-medium text-slate-900">Server Metrics</p>
+                            <p class="mt-1 text-sm text-slate-500">
+                                Raw agent samples are the expensive rows, so they are kept briefly.
+                                Before they are deleted the hourly rollup preserves their shape, and
+                                the sweep will not prune a sample that has not been rolled up yet.
+                            </p>
+                            <div class="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                <x-field label="Keep Raw Samples (Days)" for="host_metrics_days" :error="$errors->first('host_metrics_days')"
+                                    hint="Full resolution history.">
+                                    <x-input type="number" id="host_metrics_days" name="host_metrics_days" min="1" max="3650" value="{{ $v['host_metrics_days'] }}" />
+                                </x-field>
+                                <x-field label="Keep Hourly (Days)" for="rollup_hourly_days" :error="$errors->first('rollup_hourly_days')"
+                                    hint="Zero keeps them forever.">
+                                    <x-input type="number" id="rollup_hourly_days" name="rollup_hourly_days" min="0" max="3650" value="{{ $v['rollup_hourly_days'] }}" />
+                                </x-field>
+                                <x-field label="Keep Daily (Days)" for="rollup_daily_days" :error="$errors->first('rollup_daily_days')"
+                                    hint="Zero keeps them forever.">
+                                    <x-input type="number" id="rollup_daily_days" name="rollup_daily_days" min="0" max="3650" value="{{ $v['rollup_daily_days'] }}" />
+                                </x-field>
+                            </div>
+                        </div>
+
+                        <div class="border-t border-slate-100 pt-5">
                             <x-toggle name="prune_resolved_incidents" :checked="$v['prune_resolved_incidents'] === '1'"
                                 label="Prune Resolved Incidents"
                                 description="Delete incidents that were resolved long ago. Open incidents are never touched." />

@@ -6,6 +6,7 @@ use App\Models\AuditLog;
 use App\Models\HostGroup;
 use App\Models\HostMetric;
 use App\Models\MonitoredHost;
+use App\Services\HostHistory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\URL;
 
@@ -160,14 +161,15 @@ class HostController extends Controller
     {
         abort_unless($host->isVisibleTo($request->user()), 403);
 
-        $samples = HostMetric::where('monitored_host_id', $host->id)
-            ->orderByDesc('captured_at')
-            ->limit(60)
-            ->get()
-            ->reverse()
-            ->values();
+        $range = HostHistory::range((string) $request->query('range', '30m'));
+        $series = HostHistory::series($host, $range);
 
-        $latest = $samples->last();
+        // The live gauges always read the newest RAW sample, never a rollup.
+        // A gauge showing an hourly average would be a different, quieter number
+        // than the one the trigger fired on, and the two disagreeing on the same
+        // screen is worse than the longer chart is useful.
+        $latest = HostMetric::where('monitored_host_id', $host->id)
+            ->orderByDesc('captured_at')->first();
 
         return response()->json([
             'status' => $host->effective_status,
@@ -196,11 +198,10 @@ class HostController extends Controller
                 'net_tx' => (int) $latest->net_tx,
                 'detail' => $latest->detail,
             ] : null,
-            'history' => [
-                'cpu' => $samples->map(fn ($m) => round($m->cpu_pct, 1))->all(),
-                'mem' => $samples->map(fn ($m) => $m->memPct())->all(),
-                'disk' => $samples->map(fn ($m) => $m->diskPct())->all(),
-            ],
+            'range' => $range['key'],
+            'ranges' => HostHistory::options(),
+            'resolution' => $series['resolution'],
+            'history' => $series['history'],
         ]);
     }
 }
